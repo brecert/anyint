@@ -1,0 +1,9 @@
+- [ ] Better type support so that `let x: int<i32, 2> = int::from_lossy(5);` works
+- [ ] A macro for writing int, so that `let x = n!(u7);` is possible
+- [ ] More methods
+- [ ] A more generic implementation once rust has better type support for that
+- [ ] FromStr and other implementations
+- [ ] A Wrapped implementation
+- [ ] const fn in traits once rust supports that
+- [ ] feature flags
+- [ ] bigints or similar
