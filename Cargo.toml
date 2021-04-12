@@ -1,2 +1,2 @@
 [workspace]
-members = [ "anyint" ]
+members = [ "anyint", "anyint_macros" ]

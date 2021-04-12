@@ -4,6 +4,8 @@ use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
 use thiserror::Error;
 
+pub use anyint_macros::{n};
+
 /// The error type returned when a checked `int` conversion fails.
 #[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[error("out of range type conversion attempted")]
@@ -135,6 +137,15 @@ mod test {
     // fn test_invalid_bits_size() {
     //     let _ = int::<u8, 8>::MAX;
     // }
+
+    mod macros {
+        use super::*;
+
+        #[test]
+        fn smoketest() {
+            let x = n!(32i7);
+        }
+    }
 
     mod unsigned {
         use super::*;

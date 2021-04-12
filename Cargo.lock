@@ -6,7 +6,16 @@ version = 3
 name = "anyint"
 version = "0.1.0"
 dependencies = [
+ "anyint_macros",
  "thiserror",
+]
+
+[[package]]
+name = "anyint_macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
