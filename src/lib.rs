@@ -44,7 +44,15 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
 macro_rules! impl_common {
     ($ty: ty) => {
         impl<const BITS: u32> int<$ty, BITS> {
-            /// Returns the largest value that can be represented by this integer type.
+            /// private use clamp method keeping it in bounds
+            const fn clamp(self) -> Self {
+                match self.0 {
+                    x if x < Self::MIN => Self::min_value(),
+                    x if x > Self::MAX => Self::max_value(),
+                    _ => self,
+                }
+            }
+
             #[inline]
             pub const fn max_value() -> Self {
                 Self(Self::MAX)
@@ -65,7 +73,29 @@ macro_rules! impl_common {
             /// Convert a `$ty` into the target. Only the `BITS` amount are kept.
             #[inline]
             pub const fn from_lossy(data: $ty) -> Self {
-                Self(data & Self::MAX)
+                Self(data).clamp()
+            }
+
+            // todo: check the outputted asm to see if this optimized how I think it's being optimized
+
+            /// Saturating integer addition. Computes `self + rhs`, saturating at the numeric bounds instead of overflowing.
+            pub const fn saturating_add(&self, rhs: $ty) -> Self {
+                Self(self.0.saturating_add(rhs)).clamp()
+            }
+
+            /// Saturating integer subtraction. Computes `self - rhs`, saturating at the numeric bounds instead of overflowing.
+            pub const fn saturating_sub(&self, rhs: $ty) -> Self {
+                Self(self.0.saturating_sub(rhs)).clamp()
+            }
+
+            /// Saturating integer multiplication. Computes `self * rhs`, saturating at the numeric bounds instead of overflowing.
+            pub const fn saturating_mul(&self, rhs: $ty) -> Self {
+                Self(self.0.saturating_mul(rhs)).clamp()
+            }
+
+            /// Saturating integer exponentiation. Computes `self.pow(exp)`, saturating at the numeric bounds instead of overflowing.
+            pub const fn saturating_pow(&self, rhs: u32) -> Self {
+                Self(self.0.saturating_pow(rhs)).clamp()
             }
         }
 
@@ -105,6 +135,26 @@ macro_rules! impl_nonstandard_int {
         impl<const BITS: u32> NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
+        }
+
+        impl<const BITS: u32> int<$ty, BITS> {
+            /// Saturating absolute value. Computes `self.abs()`, returning MAX if `self == MIN` instead of overflowing.
+            pub const fn saturating_abs(self) -> Self {
+                if self.0 == Self::MIN {
+                    Self::max_value()
+                } else {
+                    Self(self.0.saturating_abs())
+                }
+            }
+
+            /// Saturating integer negation. Computes `-self`, returning `MAX` if `self == MIN` instead of overflowing.
+            pub const fn saturating_neg(self) -> Self {
+                if self.0 == Self::MIN {
+                    Self::max_value()
+                } else {
+                    Self(self.0.saturating_neg())
+                }
+            }
         }
 
         impl_common!($ty);
@@ -194,6 +244,35 @@ mod test {
             let value: Result<int<u8, 6>, OutOfRangeIntError> = 64.try_into();
             assert_eq!(value, Err(OutOfRangeIntError))
         }
+
+        mod saturating {
+            use super::*;
+            type u6 = int<u8, 6>;
+
+            #[test]
+            fn saturating_add() {
+                assert_eq!(u6::from_lossy(10).saturating_add(5), u6::from_lossy(15));
+                assert_eq!(u6::max_value().saturating_add(5), u6::max_value())
+            }
+
+            #[test]
+            fn saturating_sub() {
+                assert_eq!(u6::from_lossy(10).saturating_sub(5), u6::from_lossy(5));
+                assert_eq!(u6::min_value().saturating_sub(5), u6::min_value())
+            }
+
+            #[test]
+            fn saturating_mul() {
+                assert_eq!(u6::from_lossy(10).saturating_mul(5), u6::from_lossy(50));
+                assert_eq!(u6::from_lossy(10).saturating_mul(10), u6::max_value())
+            }
+
+            #[test]
+            fn saturating_pow() {
+                assert_eq!(u6::from_lossy(3).saturating_pow(3), u6::from_lossy(27));
+                assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
+            }
+        }
     }
 
     mod signed {
@@ -235,9 +314,10 @@ mod test {
 
         #[test]
         fn from_lossy() {
-            let value: int<i8, 6> = int::<i8, 6>::from_lossy(i8::MAX);
-            let value_i8: i8 = value.into();
-            assert_eq!(value_i8, 31);
+            assert_eq!(int::<i8, 6>::from_lossy(12).0, 12);
+            assert_eq!(int::<i8, 6>::from_lossy(-12).0, -12);
+            assert_eq!(int::<i8, 6>::from_lossy(i8::MAX).0, 31);
+            assert_eq!(int::<i8, 6>::from_lossy(i8::MIN).0, -32);
         }
 
         #[test]
@@ -253,6 +333,51 @@ mod test {
             assert_eq!(value, Ok(int::<i8, 6>(15)));
             let value: Result<int<i8, 6>, OutOfRangeIntError> = 32.try_into();
             assert_eq!(value, Err(OutOfRangeIntError))
+        }
+
+        mod saturating {
+            use super::*;
+            type i6 = int<i8, 6>;
+
+            #[test]
+            fn saturating_add() {
+                assert_eq!(i6::from_lossy(10).saturating_add(5), i6::from_lossy(15));
+                assert_eq!(i6::max_value().saturating_add(5), i6::max_value())
+            }
+
+            #[test]
+            fn saturating_sub() {
+                assert_eq!(i6::from_lossy(10).saturating_sub(5), i6::from_lossy(5));
+                assert_eq!(i6::min_value().saturating_sub(5), i6::min_value())
+            }
+
+            #[test]
+            fn saturating_mul() {
+                assert_eq!(i6::from_lossy(10).saturating_mul(2), i6::from_lossy(20));
+                assert_eq!(i6::from_lossy(10).saturating_mul(10), i6::max_value())
+            }
+
+            #[test]
+            fn saturating_pow() {
+                assert_eq!(i6::from_lossy(3).saturating_pow(3), i6::from_lossy(27));
+                assert_eq!(i6::from_lossy(10).saturating_pow(5), i6::max_value())
+            }
+
+            #[test]
+            fn saturating_neg() {
+                assert_eq!(i6::from_lossy(3).saturating_neg(), i6::from_lossy(-3));
+                assert_eq!(i6::from_lossy(-3).saturating_neg(), i6::from_lossy(3));
+                assert_eq!(i6::max_value().saturating_neg(), i6::from_lossy(-31));
+                assert_eq!(i6::min_value().saturating_neg(), i6::max_value());
+            }
+
+            #[test]
+            fn saturating_abs() {
+                assert_eq!(i6::from_lossy(3).saturating_abs(), i6::from_lossy(3));
+                assert_eq!(i6::from_lossy(-3).saturating_abs(), i6::from_lossy(3));
+                assert_eq!(i6::max_value().saturating_abs(), i6::max_value());
+                assert_eq!(i6::min_value().saturating_abs(), i6::max_value());
+            }
         }
     }
 }

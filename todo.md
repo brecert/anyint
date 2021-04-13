@@ -8,3 +8,5 @@
 - [ ] const fn in traits once rust supports that
 - [ ] feature flags
 - [ ] bigints or similar
+- [ ] better docs and doctests
+- [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
