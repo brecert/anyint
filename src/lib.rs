@@ -53,6 +53,7 @@ macro_rules! impl_common {
                 }
             }
 
+            /// Returns the largest value that can be represented by this integer type.
             #[inline]
             pub const fn max_value() -> Self {
                 Self(Self::MAX)
@@ -190,7 +191,6 @@ mod test {
         use super::*;
         #[allow(non_camel_case_types)]
         type u6 = int<u8, 6>;
-
 
         #[test]
         fn max() {
