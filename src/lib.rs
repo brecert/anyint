@@ -188,36 +188,39 @@ mod test {
 
     mod unsigned {
         use super::*;
+        #[allow(non_camel_case_types)]
+        type u6 = int<u8, 6>;
+
 
         #[test]
         fn max() {
-            assert_eq!(int::<u8, 6>::MAX, 63);
+            assert_eq!(u6::MAX, 63);
         }
 
         #[test]
         fn min() {
-            assert_eq!(int::<u8, 6>::MIN, 0);
+            assert_eq!(u6::MIN, 0);
         }
 
         #[test]
         fn bits() {
-            assert_eq!(int::<u8, 6>::BITS, 6);
+            assert_eq!(u6::BITS, 6);
         }
 
         #[test]
         fn max_value() {
-            assert_eq!(int::<u8, 6>::max_value(), int::<u8, 6>(63));
+            assert_eq!(u6::max_value(), int::<u8, 6>(63));
         }
 
         #[test]
         fn min_value() {
-            assert_eq!(int::<u8, 6>::min_value(), int::<u8, 6>(0));
+            assert_eq!(u6::min_value(), int::<u8, 6>(0));
         }
 
         #[test]
         fn from_unchecked() {
             unsafe {
-                let value = int::<u8, 6>::from_unchecked(u8::MAX);
+                let value = u6::from_unchecked(u8::MAX);
                 let value_u8: u8 = value.into();
                 assert_eq!(value_u8, 255);
             }
@@ -225,29 +228,28 @@ mod test {
 
         #[test]
         fn from_lossy() {
-            let value = int::<u8, 6>::from_lossy(u8::MAX);
+            let value = u6::from_lossy(u8::MAX);
             let value_u8: u8 = value.into();
             assert_eq!(value_u8, 63);
         }
 
         #[test]
         fn from_arbitrary_to_inner() {
-            let value: int<u8, 6> = int(15);
+            let value: u6 = int(15);
             let value_u8: u8 = value.into();
             assert_eq!(value_u8, 15);
         }
 
         #[test]
         fn try_from_inner_type_to_arbitrary() {
-            let value: Result<int<u8, 6>, OutOfRangeIntError> = 15.try_into();
+            let value: Result<u6, OutOfRangeIntError> = 15.try_into();
             assert_eq!(value, Ok(int::<u8, 6>(15)));
-            let value: Result<int<u8, 6>, OutOfRangeIntError> = 64.try_into();
+            let value: Result<u6, OutOfRangeIntError> = 64.try_into();
             assert_eq!(value, Err(OutOfRangeIntError))
         }
 
         mod saturating {
             use super::*;
-            type u6 = int<u8, 6>;
 
             #[test]
             fn saturating_add() {
@@ -277,36 +279,38 @@ mod test {
 
     mod signed {
         use super::*;
+        #[allow(non_camel_case_types)]
+        type i6 = int<i8, 6>;
 
         #[test]
         fn max() {
-            assert_eq!(int::<i8, 6>::MAX, 31);
+            assert_eq!(i6::MAX, 31);
         }
 
         #[test]
         fn min() {
-            assert_eq!(int::<i8, 6>::MIN, -32);
+            assert_eq!(i6::MIN, -32);
         }
 
         #[test]
         fn bits() {
-            assert_eq!(int::<i8, 6>::BITS, 6);
+            assert_eq!(i6::BITS, 6);
         }
 
         #[test]
         fn max_value() {
-            assert_eq!(int::<i8, 6>::max_value(), int::<i8, 6>(31));
+            assert_eq!(i6::max_value(), int::<i8, 6>(31));
         }
 
         #[test]
         fn min_value() {
-            assert_eq!(int::<i8, 6>::min_value(), int::<i8, 6>(-32));
+            assert_eq!(i6::min_value(), int::<i8, 6>(-32));
         }
 
         #[test]
         fn from_unchecked() {
             unsafe {
-                let value = int::<i8, 6>::from_unchecked(i8::MAX);
+                let value = i6::from_unchecked(i8::MAX);
                 let value_i8: i8 = value.into();
                 assert_eq!(value_i8, 127);
             }
@@ -314,30 +318,29 @@ mod test {
 
         #[test]
         fn from_lossy() {
-            assert_eq!(int::<i8, 6>::from_lossy(12).0, 12);
-            assert_eq!(int::<i8, 6>::from_lossy(-12).0, -12);
-            assert_eq!(int::<i8, 6>::from_lossy(i8::MAX).0, 31);
-            assert_eq!(int::<i8, 6>::from_lossy(i8::MIN).0, -32);
+            assert_eq!(i6::from_lossy(12).0, 12);
+            assert_eq!(i6::from_lossy(-12).0, -12);
+            assert_eq!(i6::from_lossy(i8::MAX).0, 31);
+            assert_eq!(i6::from_lossy(i8::MIN).0, -32);
         }
 
         #[test]
         fn from_arbitrary_to_inner() {
-            let value: int<i8, 6> = int(15);
+            let value: i6 = int(15);
             let value_i8: i8 = value.into();
             assert_eq!(value_i8, 15);
         }
 
         #[test]
         fn try_from_inner_type_to_arbitrary() {
-            let value: Result<int<i8, 6>, OutOfRangeIntError> = 15.try_into();
+            let value: Result<i6, OutOfRangeIntError> = 15.try_into();
             assert_eq!(value, Ok(int::<i8, 6>(15)));
-            let value: Result<int<i8, 6>, OutOfRangeIntError> = 32.try_into();
+            let value: Result<i6, OutOfRangeIntError> = 32.try_into();
             assert_eq!(value, Err(OutOfRangeIntError))
         }
 
         mod saturating {
             use super::*;
-            type i6 = int<i8, 6>;
 
             #[test]
             fn saturating_add() {
