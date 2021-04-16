@@ -103,7 +103,8 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     }
 }
 
-macro impl_common($ty:ty) {
+#[doc(hidden)]
+pub macro impl_common($ty:ty) {
     // todo: only implement once instead of for both true/false
     impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>
     where
