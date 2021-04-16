@@ -1,8 +1,40 @@
+#![allow(incomplete_features)]
+#![feature(
+    decl_macro,
+    const_fn,
+    const_trait_impl,
+    const_refs_to_cell,
+    associated_type_defaults,
+    specialization
+)]
+
 // todo: no std
 // todo: unstable feature flags
 use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
+use std::ops::Range;
 use thiserror::Error;
+
+const fn clamp<T: PartialOrd + Copy>(range: &std::ops::Range<T>, val: T) -> T {
+    if val < range.start {
+        return range.start;
+    }
+    if val > range.end {
+        return range.end;
+    }
+    return val;
+}
+
+trait Clamp<T> {
+    type Output = T;
+    fn clamp(&self, lhs: T) -> Self::Output;
+}
+
+impl<T: PartialOrd + Copy> const Clamp<T> for Range<T> {
+    fn clamp(&self, val: T) -> Self::Output {
+        clamp(self, val)
+    }
+}
 
 /// The error type returned when a checked `int` conversion fails.
 #[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -10,7 +42,11 @@ use thiserror::Error;
 pub struct OutOfRangeIntError;
 
 // todo: Const trait implementations
-pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool> {
+pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
+where
+    T: PartialOrd + Copy,
+    Self: Sized,
+{
     /// Represents if this integer type is considered to be signed or not.
     const SIGNED: bool = SIGNED;
 
@@ -22,6 +58,36 @@ pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool> {
 
     /// The largest value that can be represented by this integer type.
     const MAX: T;
+
+    /// Convert a `T` into the target without bounds checking
+    unsafe fn from_unchecked(n: T) -> Self;
+
+    /// Convert a `T` into the target. Only the `BITS` amount are kept.
+    fn from_lossy(n: T) -> Self {
+        unsafe { Self::from_unchecked(n).mask() }
+    }
+
+    // temporary
+    // todo: better names, documentation and usage
+    /// Gets a reference to the value of `T`
+    fn get_ref(&self) -> T;
+
+    // todo: find better name
+    /// Limits the inner value to be between the `MIN` and `MAX`
+    fn mask(self) -> Self {
+        let clamped = (Self::MIN..Self::MAX).clamp(self.get_ref());
+        unsafe { Self::from_unchecked(clamped) }
+    }
+
+    /// Returns the smallest value that can be represented by this integer type.
+    fn min_value() -> Self {
+        unsafe { Self::from_unchecked(Self::MIN) }
+    }
+
+    /// Returns the largest value that can be represented by this integer type.
+    fn max_value() -> Self {
+        unsafe { Self::from_unchecked(Self::MAX) }
+    }
 }
 
 /// An integer representation that can hold `BITS` amount of information for the given type `T`.
@@ -37,129 +103,98 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     }
 }
 
-// decl 1.0 for supporting older rust
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! impl_common {
-    ($ty: ty) => {
-        impl<const BITS: u32> int<$ty, BITS> {
-            /// private use clamp method keeping it in bounds
-            const fn clamp(self) -> Self {
-                match self.0 {
-                    x if x < Self::MIN => Self::min_value(),
-                    x if x > Self::MAX => Self::max_value(),
-                    _ => self,
-                }
-            }
-
-            /// Returns the largest value that can be represented by this integer type.
-            #[inline]
-            pub const fn max_value() -> Self {
-                Self(Self::MAX)
-            }
-
-            /// Returns the smallest value that can be represented by this integer type.
-            #[inline]
-            pub const fn min_value() -> Self {
-                Self(Self::MIN)
-            }
-
-            /// Convert a `$ty` into the target without bounds checking
-            #[inline]
-            pub const unsafe fn from_unchecked(data: $ty) -> Self {
-                Self(data)
-            }
-
-            /// Convert a `$ty` into the target. Only the `BITS` amount are kept.
-            #[inline]
-            pub const fn from_lossy(data: $ty) -> Self {
-                Self(data).clamp()
-            }
-
-            // todo: check the outputted asm to see if this optimized how I think it's being optimized
-
-            /// Saturating integer addition. Computes `self + rhs`, saturating at the numeric bounds instead of overflowing.
-            pub const fn saturating_add(&self, rhs: $ty) -> Self {
-                Self(self.0.saturating_add(rhs)).clamp()
-            }
-
-            /// Saturating integer subtraction. Computes `self - rhs`, saturating at the numeric bounds instead of overflowing.
-            pub const fn saturating_sub(&self, rhs: $ty) -> Self {
-                Self(self.0.saturating_sub(rhs)).clamp()
-            }
-
-            /// Saturating integer multiplication. Computes `self * rhs`, saturating at the numeric bounds instead of overflowing.
-            pub const fn saturating_mul(&self, rhs: $ty) -> Self {
-                Self(self.0.saturating_mul(rhs)).clamp()
-            }
-
-            /// Saturating integer exponentiation. Computes `self.pow(exp)`, saturating at the numeric bounds instead of overflowing.
-            pub const fn saturating_pow(&self, rhs: u32) -> Self {
-                Self(self.0.saturating_pow(rhs)).clamp()
+macro impl_common($ty:ty) {
+    // todo: only implement once instead of for both true/false
+    impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>
+    where
+        Self: NonStandardInteger<$ty, BITS, true>,
+    {
+        type Error = OutOfRangeIntError;
+        fn try_from(data: $ty) -> Result<Self, Self::Error> {
+            if data > Self::MAX {
+                Err(OutOfRangeIntError)
+            } else {
+                Ok(Self(data))
             }
         }
+    }
 
-        impl<const BITS: u32> From<int<$ty, BITS>> for $ty {
-            #[inline]
-            fn from(data: int<$ty, BITS>) -> $ty {
-                data.0
+    impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>
+    where
+        Self: NonStandardInteger<$ty, BITS, false>,
+    {
+        type Error = OutOfRangeIntError;
+        fn try_from(data: $ty) -> Result<Self, Self::Error> {
+            if data > Self::MAX {
+                Err(OutOfRangeIntError)
+            } else {
+                Ok(Self(data))
             }
         }
+    }
 
-        impl<const BITS: u32> TryFrom<$ty> for int<$ty, BITS> {
-            type Error = OutOfRangeIntError;
-
-            fn try_from(data: $ty) -> Result<Self, Self::Error> {
-                if data > Self::MAX {
-                    Err(OutOfRangeIntError)
-                } else {
-                    Ok(Self(data))
-                }
-            }
+    impl<const BITS: u32> const From<int<$ty, BITS>> for $ty {
+        #[inline]
+        fn from(data: int<$ty, BITS>) -> Self {
+            data.0
         }
-    };
+    }
 }
 
 #[doc(hidden)]
-#[macro_export]
-macro_rules! impl_nonstandard_int {
+pub macro impl_nonstandard_int {
     (unsigned: $ty: ty) => {
-        impl<const BITS: u32> NonStandardInteger<$ty, BITS, false> for int<$ty, BITS> {
+        impl<const BITS: u32> const NonStandardInteger<$ty, BITS, false> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS) - 1;
             const MIN: $ty = 0;
+
+            fn get_ref(&self) -> $ty {
+                return self.0;
+            }
+
+            unsafe fn from_unchecked(n: $ty) -> Self {
+                Self(n)
+            }
         }
 
         impl_common!($ty);
-    };
+    },
     (signed: $ty: ty) => {
-        impl<const BITS: u32> NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
+        impl<const BITS: u32> const NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
-        }
 
-        impl<const BITS: u32> int<$ty, BITS> {
-            /// Saturating absolute value. Computes `self.abs()`, returning MAX if `self == MIN` instead of overflowing.
-            pub const fn saturating_abs(self) -> Self {
-                if self.0 == Self::MIN {
-                    Self::max_value()
-                } else {
-                    Self(self.0.saturating_abs())
-                }
+            fn get_ref(&self) -> $ty {
+                return self.0;
             }
 
-            /// Saturating integer negation. Computes `-self`, returning `MAX` if `self == MIN` instead of overflowing.
-            pub const fn saturating_neg(self) -> Self {
-                if self.0 == Self::MIN {
-                    Self::max_value()
-                } else {
-                    Self(self.0.saturating_neg())
-                }
+            unsafe fn from_unchecked(n: $ty) -> Self {
+                Self(n)
             }
         }
+
+        // impl<const BITS: u32> int<$ty, BITS> {
+        //     /// Saturating absolute value. Computes `self.abs()`, returning MAX if `self == MIN` instead of overflowing.
+        //     pub const fn saturating_abs(self) -> Self {
+        //         if self.0 == Self::MIN {
+        //             Self::max_value()
+        //         } else {
+        //             Self(self.0.saturating_abs())
+        //         }
+        //     }
+
+        //     /// Saturating integer negation. Computes `-self`, returning `MAX` if `self == MIN` instead of overflowing.
+        //     pub const fn saturating_neg(self) -> Self {
+        //         if self.0 == Self::MIN {
+        //             Self::max_value()
+        //         } else {
+        //             Self(self.0.saturating_neg())
+        //         }
+        //     }
+        // }
 
         impl_common!($ty);
-    };
+    }
 }
 
 impl_nonstandard_int!(unsigned: u8);
@@ -248,33 +283,33 @@ mod test {
             assert_eq!(value, Err(OutOfRangeIntError))
         }
 
-        mod saturating {
-            use super::*;
+        // mod saturating {
+        //     use super::*;
 
-            #[test]
-            fn saturating_add() {
-                assert_eq!(u6::from_lossy(10).saturating_add(5), u6::from_lossy(15));
-                assert_eq!(u6::max_value().saturating_add(5), u6::max_value())
-            }
+        //     #[test]
+        //     fn saturating_add() {
+        //         assert_eq!(u6::from_lossy(10).saturating_add(5), u6::from_lossy(15));
+        //         assert_eq!(u6::max_value().saturating_add(5), u6::max_value())
+        //     }
 
-            #[test]
-            fn saturating_sub() {
-                assert_eq!(u6::from_lossy(10).saturating_sub(5), u6::from_lossy(5));
-                assert_eq!(u6::min_value().saturating_sub(5), u6::min_value())
-            }
+        //     #[test]
+        //     fn saturating_sub() {
+        //         assert_eq!(u6::from_lossy(10).saturating_sub(5), u6::from_lossy(5));
+        //         assert_eq!(u6::min_value().saturating_sub(5), u6::min_value())
+        //     }
 
-            #[test]
-            fn saturating_mul() {
-                assert_eq!(u6::from_lossy(10).saturating_mul(5), u6::from_lossy(50));
-                assert_eq!(u6::from_lossy(10).saturating_mul(10), u6::max_value())
-            }
+        //     #[test]
+        //     fn saturating_mul() {
+        //         assert_eq!(u6::from_lossy(10).saturating_mul(5), u6::from_lossy(50));
+        //         assert_eq!(u6::from_lossy(10).saturating_mul(10), u6::max_value())
+        //     }
 
-            #[test]
-            fn saturating_pow() {
-                assert_eq!(u6::from_lossy(3).saturating_pow(3), u6::from_lossy(27));
-                assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
-            }
-        }
+        //     #[test]
+        //     fn saturating_pow() {
+        //         assert_eq!(u6::from_lossy(3).saturating_pow(3), u6::from_lossy(27));
+        //         assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
+        //     }
+        // }
     }
 
     mod signed {
@@ -339,48 +374,48 @@ mod test {
             assert_eq!(value, Err(OutOfRangeIntError))
         }
 
-        mod saturating {
-            use super::*;
+        // mod saturating {
+        //     use super::*;
 
-            #[test]
-            fn saturating_add() {
-                assert_eq!(i6::from_lossy(10).saturating_add(5), i6::from_lossy(15));
-                assert_eq!(i6::max_value().saturating_add(5), i6::max_value())
-            }
+        //     #[test]
+        //     fn saturating_add() {
+        //         assert_eq!(i6::from_lossy(10).saturating_add(5), i6::from_lossy(15));
+        //         assert_eq!(i6::max_value().saturating_add(5), i6::max_value())
+        //     }
 
-            #[test]
-            fn saturating_sub() {
-                assert_eq!(i6::from_lossy(10).saturating_sub(5), i6::from_lossy(5));
-                assert_eq!(i6::min_value().saturating_sub(5), i6::min_value())
-            }
+        //     #[test]
+        //     fn saturating_sub() {
+        //         assert_eq!(i6::from_lossy(10).saturating_sub(5), i6::from_lossy(5));
+        //         assert_eq!(i6::min_value().saturating_sub(5), i6::min_value())
+        //     }
 
-            #[test]
-            fn saturating_mul() {
-                assert_eq!(i6::from_lossy(10).saturating_mul(2), i6::from_lossy(20));
-                assert_eq!(i6::from_lossy(10).saturating_mul(10), i6::max_value())
-            }
+        //     #[test]
+        //     fn saturating_mul() {
+        //         assert_eq!(i6::from_lossy(10).saturating_mul(2), i6::from_lossy(20));
+        //         assert_eq!(i6::from_lossy(10).saturating_mul(10), i6::max_value())
+        //     }
 
-            #[test]
-            fn saturating_pow() {
-                assert_eq!(i6::from_lossy(3).saturating_pow(3), i6::from_lossy(27));
-                assert_eq!(i6::from_lossy(10).saturating_pow(5), i6::max_value())
-            }
+        //     #[test]
+        //     fn saturating_pow() {
+        //         assert_eq!(i6::from_lossy(3).saturating_pow(3), i6::from_lossy(27));
+        //         assert_eq!(i6::from_lossy(10).saturating_pow(5), i6::max_value())
+        //     }
 
-            #[test]
-            fn saturating_neg() {
-                assert_eq!(i6::from_lossy(3).saturating_neg(), i6::from_lossy(-3));
-                assert_eq!(i6::from_lossy(-3).saturating_neg(), i6::from_lossy(3));
-                assert_eq!(i6::max_value().saturating_neg(), i6::from_lossy(-31));
-                assert_eq!(i6::min_value().saturating_neg(), i6::max_value());
-            }
+        //     #[test]
+        //     fn saturating_neg() {
+        //         assert_eq!(i6::from_lossy(3).saturating_neg(), i6::from_lossy(-3));
+        //         assert_eq!(i6::from_lossy(-3).saturating_neg(), i6::from_lossy(3));
+        //         assert_eq!(i6::max_value().saturating_neg(), i6::from_lossy(-31));
+        //         assert_eq!(i6::min_value().saturating_neg(), i6::max_value());
+        //     }
 
-            #[test]
-            fn saturating_abs() {
-                assert_eq!(i6::from_lossy(3).saturating_abs(), i6::from_lossy(3));
-                assert_eq!(i6::from_lossy(-3).saturating_abs(), i6::from_lossy(3));
-                assert_eq!(i6::max_value().saturating_abs(), i6::max_value());
-                assert_eq!(i6::min_value().saturating_abs(), i6::max_value());
-            }
-        }
+        //     #[test]
+        //     fn saturating_abs() {
+        //         assert_eq!(i6::from_lossy(3).saturating_abs(), i6::from_lossy(3));
+        //         assert_eq!(i6::from_lossy(-3).saturating_abs(), i6::from_lossy(3));
+        //         assert_eq!(i6::max_value().saturating_abs(), i6::max_value());
+        //         assert_eq!(i6::min_value().saturating_abs(), i6::max_value());
+        //     }
+        // }
     }
 }
