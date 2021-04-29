@@ -373,17 +373,35 @@ impl_nonstandard_int!(signed: i64);
 impl_nonstandard_int!(signed: i128);
 impl_nonstandard_int!(signed: isize);
 
+#[cfg(doctest)]
+mod doctest {
+    use super::*;
+
+    /// ```compile_fail
+    /// use anyint::*;
+    /// let x = anyint::int::<i8, 8>::MAX;
+    /// ```
+    pub struct SIntOnlyTakesValidSize;
+
+    /// ```compile_fail
+    /// use anyint::*;
+    /// let x = anyint::int::<u8, 8>::MAX;
+    /// ```
+    pub struct UIntOnlyTakesValidSize;
+
+    /// ```
+    /// use anyint::*;
+    /// let x = int::<u8, 7>::MAX;
+    /// let x = int::<i8, 7>::MAX;
+    /// ```
+    pub struct IntTakesValidSizes;
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use convert::LossyInto;
     use std::convert::TryInto;
-
-    // #[test]
-    // #[ignore = "not yet implemented due to rust's current type system"]
-    // fn test_invalid_bits_size() {
-    //     let _ = int::<u8, 8>::MAX;
-    // }
 
     mod unsigned_common {
         use super::*;

@@ -13,3 +13,4 @@
 - [ ] very heavy cleanup
   - [ ] test normalization and cleanup
   - [ ] split up lib.rs
+- [ ] add benchmarks
