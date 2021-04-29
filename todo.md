@@ -10,3 +10,6 @@
 - [ ] bigints or similar
 - [ ] better docs and doctests
 - [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
+- [ ] very heavy cleanup
+  - [ ] test normalization and cleanup
+  - [ ] split up lib.rs
