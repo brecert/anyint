@@ -6,7 +6,8 @@
     const_refs_to_cell,
     associated_type_defaults,
     specialization,
-    int_bits_const
+    int_bits_const,
+    extended_key_value_attributes
 )]
 
 pub mod clamp;
@@ -222,6 +223,12 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
     }
 
+    /// ```
+    /// use anyint::*;
+    /// use anyint::convert::*;
+    #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
+    /// assert_eq!(x.get_ref(), 10);
+    /// ```
     impl<const BITS: u32> const NonStandardIntegerExt<$ty, BITS, $signed> for int<$ty, BITS> {
         // checked implementations are not based on overflowing implementations because they can be implemented independently a little more performant.
         // todo: check performance...
@@ -239,10 +246,24 @@ pub macro impl_common($ty:ty, $signed:literal) {
             from_lossy(self.get_ref().saturating_pow(rhs))
         }
 
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::max_value().overflowing_add(N6::from_lossy(1)), (N6::min_value(), true));
+        /// assert_eq!(N6::min_value().overflowing_add(N6::from_lossy(1)), (N6::from_lossy(N6::MIN + 1), false));
+        /// ```
         fn overflowing_add(self, rhs: Self) -> (Self, bool) {
             Self(self.get_ref() + rhs.get_ref()).wrapped()
         }
 
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
+        /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
+        /// ```
         fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
             let a = self.get_ref();
             let b = rhs.get_ref();
