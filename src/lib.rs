@@ -116,13 +116,33 @@ pub trait NonStandardIntegerExt<T: PartialOrd + Copy, const BITS: u32, const SIG
     /// Saturating integer exponentiation. Computes `self.pow(exp)`, saturating at the numeric bounds instead of overflowing.
     fn saturating_pow(self, exp: u32) -> Self;
 
-    // fn wrapping_add(self, exp: Self) -> Self;
-    // fn wrapping_sub(self, exp: Self) -> Self;
-    // fn wrapping_mul(self, exp: Self) -> Self;
-    // fn wrapping_div(self, exp: Self) -> Self;
-    // fn wrapping_rem(self, exp: Self) -> Self;
-    // fn wrapping_shl(self, exp: Self) -> Self;
-    // fn wrapping_shr(self, exp: Self) -> Self;
+    /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at the
+    /// boundary of the type.
+    fn wrapping_add(self, rhs: Self) -> Self;
+
+    /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around at the
+    /// boundary of the type.
+    fn wrapping_sub(self, rhs: Self) -> Self;
+
+    /// Wrapping (modular) multiplication. Computes `self * rhs`, wrapping around at
+    /// the boundary of the type.
+    fn wrapping_mul(self, rhs: Self) -> Self;
+
+    /// Wrapping (modular) division. Computes `self / rhs`, wrapping around at the
+    /// boundary of the type.
+    ///
+    /// The only case where such wrapping can occur is when one divides `MIN / -1` on a signed type (where
+    /// `MIN` is the negative minimal value for the type); this is equivalent to `-MIN`, a positive value
+    /// that is too large to represent in the type. In such a case, this function returns `MIN` itself.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `rhs` is 0.
+    fn wrapping_div(self, rhs: Self) -> Self;
+
+    // fn wrapping_rem(self, rhs: Self) -> Self;
+    // fn wrapping_shl(self, rhs: Self) -> Self;
+    // fn wrapping_shr(self, rhs: Self) -> Self;
     // fn wrapping_pow(self, exp: u32) -> Self;
 
     /// Calculates `self` + `rhs`
@@ -210,6 +230,15 @@ pub macro fn_saturating($($name:ident,)*) {
 }
 
 #[doc(hidden)]
+pub macro fn_wrapping($($fn_name:ident => $wrap_name:ident,)*) {
+    $(
+        fn $fn_name(self, rhs: Self) -> Self {
+            self.$wrap_name(rhs).0
+        }
+    )*
+}
+
+#[doc(hidden)]
 pub macro impl_common($ty:ty, $signed:literal) {
     impl<const BITS: u32> const LossyFrom<$ty> for int<$ty, BITS> {
         /// Convert a `T` into the target. Only the `BITS` amount are kept.
@@ -247,6 +276,17 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn saturating_pow(self, rhs: u32) -> Self {
             from_lossy(self.as_ref().saturating_pow(rhs))
         }
+
+        fn_wrapping!(
+            wrapping_add => overflowing_add,
+            wrapping_sub => overflowing_sub,
+            wrapping_mul => overflowing_mul,
+            wrapping_div => overflowing_div,
+        );
+
+        // fn wrapping_add(self, rhs: Self) -> Self {
+        //     self.overflowing_add(rhs).0
+        // }
 
         /// ```
         /// use anyint::*;
@@ -577,6 +617,88 @@ mod test {
             fn saturating_pow() {
                 assert_eq!(u6::from_lossy(3).saturating_pow(3), u6::from_lossy(27));
                 assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
+            }
+        }
+
+        mod wrapping {
+            use super::*;
+
+            #[test]
+            fn wrapping_add() {
+                assert_eq!(
+                    u6::from_lossy(5).wrapping_add(2.into_lossy()),
+                    u6::from_lossy(7)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MAX).wrapping_add(2.into_lossy()),
+                    u6::from_lossy(u6::MIN + 1)
+                );
+            }
+
+            #[test]
+            fn wrapping_sub() {
+                assert_eq!(
+                    u6::from_lossy(5).wrapping_sub(2.into_lossy()),
+                    u6::from_lossy(3)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MIN).wrapping_sub(1.into_lossy()),
+                    u6::from_lossy(u6::MAX)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MIN).wrapping_sub(20.into_lossy()),
+                    u6::from_lossy(u6::MAX - 19)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).wrapping_sub(32.into_lossy()),
+                    u6::from_lossy(0)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).wrapping_sub(33.into_lossy()),
+                    u6::from_lossy(u6::MAX)
+                );
+                assert_eq!(
+                    u6::from_lossy(0).wrapping_sub(10.into_lossy()),
+                    u6::from_lossy(u6::MAX - 9)
+                );
+            }
+
+            #[test]
+            fn wrapping_mul() {
+                assert_eq!(
+                    u6::from_lossy(5).wrapping_mul(2.into_lossy()),
+                    u6::from_lossy(10)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).wrapping_mul(2.into_lossy()),
+                    u6::from_lossy(0)
+                );
+                assert_eq!(
+                    u6::from_lossy(10).wrapping_mul(10.into_lossy()),
+                    u6::from_lossy(36)
+                );
+            }
+
+            #[test]
+            fn wrapping_div() {
+                assert_eq!(
+                    u6::from_lossy(6).wrapping_div(2.into_lossy()),
+                    u6::from_lossy(3)
+                );
+                assert_eq!(
+                    u6::from_lossy(10).wrapping_div(3.into_lossy()),
+                    u6::from_lossy(3)
+                );
+                assert_eq!(
+                    u6::from_lossy(0).wrapping_div(3.into_lossy()),
+                    u6::from_lossy(0)
+                );
+            }
+
+            #[test]
+            #[should_panic]
+            fn wrapping_div_with_zero() {
+                u6::from_lossy(3).wrapping_div(0.into_lossy());
             }
         }
 
