@@ -30,7 +30,7 @@ pub struct OutOfRangeIntError;
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
-    Self: LossyFrom<T> + UncheckedFrom<T>,
+    Self: LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
 {
     // TODO: find a better name for this.
     /// The underlying representation of the integer.
@@ -50,15 +50,10 @@ where
 
     /// Convert a `T` into the target without bounds checking
 
-    // temporary
-    // todo: better names, documentation and usage
-    /// Gets a reference to the value of `T`
-    fn get_ref(&self) -> T;
-
     // todo: find better name
     /// Limits the inner value to be between the `MIN` and `MAX`
     fn mask(self) -> Self {
-        let clamped = (Self::MIN..Self::MAX).clamp(self.get_ref());
+        let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
         unsafe { Self::from_unchecked(clamped) }
     }
 
@@ -186,11 +181,17 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     }
 }
 
+impl<T, const BITS: u32> const AsRef<T> for int<T, BITS> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
 #[doc(hidden)]
 pub macro fn_checked($($name:ident,)*) {
     $(
         fn $name(self, rhs: Self) -> Option<Self> {
-            match self.get_ref().$name(rhs.get_ref()) {
+            match self.as_ref().$name(*rhs.as_ref()) {
                 Some(val) if val <= Self::MAX => Some(Self(val)),
                 _ => None
             }
@@ -202,7 +203,7 @@ pub macro fn_checked($($name:ident,)*) {
 pub macro fn_saturating($($name:ident,)*) {
     $(
         fn $name(self, rhs: Self) -> Self {
-            from_lossy(self.get_ref().$name(rhs.get_ref()))
+            from_lossy(self.as_ref().$name(*rhs.as_ref()))
         }
     )*
 }
@@ -227,7 +228,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
     /// use anyint::*;
     /// use anyint::convert::*;
     #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
-    /// assert_eq!(x.get_ref(), 10);
+    /// assert_eq!(x.as_ref(), &10);
     /// ```
     impl<const BITS: u32> const NonStandardIntegerExt<$ty, BITS, $signed> for int<$ty, BITS> {
         // checked implementations are not based on overflowing implementations because they can be implemented independently a little more performant.
@@ -243,7 +244,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn_saturating!(saturating_add, saturating_sub, saturating_mul,);
 
         fn saturating_pow(self, rhs: u32) -> Self {
-            from_lossy(self.get_ref().saturating_pow(rhs))
+            from_lossy(self.as_ref().saturating_pow(rhs))
         }
 
         /// ```
@@ -254,7 +255,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         /// assert_eq!(N6::min_value().overflowing_add(N6::from_lossy(1)), (N6::from_lossy(N6::MIN + 1), false));
         /// ```
         fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-            Self(self.get_ref() + rhs.get_ref()).wrapped()
+            Self(*self.as_ref() + *rhs.as_ref()).wrapped()
         }
 
         /// ```
@@ -265,8 +266,8 @@ pub macro impl_common($ty:ty, $signed:literal) {
         /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
         /// ```
         fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-            let a = self.get_ref();
-            let b = rhs.get_ref();
+            let a = *self.as_ref();
+            let b = *rhs.as_ref();
 
             if a >= b {
                 (Self(a - b), false)
@@ -276,12 +277,12 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-            Self(self.get_ref().wrapping_mul(rhs.get_ref())).wrapped()
+            Self(self.as_ref().wrapping_mul(*rhs.as_ref())).wrapped()
         }
 
         // todo: specialize for unsigned so that optimized normal division
         fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-            Self(self.get_ref() / rhs.get_ref()).wrapped()
+            Self(*self.as_ref() / *rhs.as_ref()).wrapped()
         }
     }
 
@@ -302,7 +303,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
     impl<const BITS: u32> const From<int<$ty, BITS>> for $ty {
         #[inline]
         fn from(data: int<$ty, BITS>) -> Self {
-            data.get_ref()
+            *data.as_ref()
         }
     }
 }
@@ -326,10 +327,6 @@ pub macro impl_nonstandard_int {
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS, false> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS) - 1;
             const MIN: $ty = 0;
-
-            fn get_ref(&self) -> $ty {
-                return self.0;
-            }
         }
 
         impl_common!($ty, false);
@@ -352,26 +349,22 @@ pub macro impl_nonstandard_int {
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
-
-            fn get_ref(&self) -> $ty {
-                return self.0;
-            }
         }
 
         impl<const BITS: u32> const NonStandardIntegerSigned<$ty, BITS> for int<$ty, BITS> {
             fn saturating_abs(self) -> Self {
-                if self.get_ref() == Self::MIN {
+                if *self.as_ref() == Self::MIN {
                     Self(Self::MAX)
                 } else {
-                    Self(self.get_ref().saturating_abs())
+                    Self(self.as_ref().saturating_abs())
                 }
             }
 
             fn saturating_neg(self) -> Self {
-                if self.get_ref() == Self::MIN {
+                if *self.as_ref() == Self::MIN {
                     Self(Self::MAX)
                 } else {
-                    Self(self.get_ref().saturating_neg())
+                    Self(self.as_ref().saturating_neg())
                 }
             }
         }
