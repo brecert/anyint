@@ -53,19 +53,17 @@ where
     /// Convert a `T` into the target without bounds checking
 
     // todo: find better name
-    /// Limits the inner value to be between the `MIN` and `MAX`
-    fn mask(self) -> Self {
+    /// Limits the inner value to be between `MIN` and `MAX`
+    fn clamp(self) -> Self {
         let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
-        // SAFETY: the value has already been masked to be in the valid range of `int`
+        // SAFETY: the value has already been clamped to be in the valid range of `int`
         unsafe { Self::from_unchecked(clamped) }
     }
-    
     /// Returns the smallest value that can be represented by this integer type.
     fn min_value() -> Self {
         // SAFETY: The user ensures that `MIN` is valid
         unsafe { Self::from_unchecked(Self::MIN) }
     }
-    
     /// Returns the largest value that can be represented by this integer type.
     fn max_value() -> Self {
         // SAFETY: The user ensures that `MAX` is valid
@@ -83,8 +81,8 @@ pub const fn from_lossy<
 >(
     n: T,
 ) -> I {
-    // SAFETY: `from_unchecked` is masked, making it a valid value
-    unsafe { I::from_unchecked(n).mask() }
+    // SAFETY: `from_unchecked` is clamped, making it a valid value
+    unsafe { I::from_unchecked(n).clamp() }
 }
 
 /// Provides integer methods.
