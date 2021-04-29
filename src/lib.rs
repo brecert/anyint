@@ -17,7 +17,7 @@ pub mod ops;
 // todo: no std
 // todo: unstable feature flags
 use crate::clamp::{Clamp, Wrap};
-use crate::convert::{LossyFrom, UncheckedFrom};
+use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
 use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -56,16 +56,19 @@ where
     /// Limits the inner value to be between the `MIN` and `MAX`
     fn mask(self) -> Self {
         let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
+        // SAFETY: the value has already been masked to be in the valid range of `int`
         unsafe { Self::from_unchecked(clamped) }
     }
-
+    
     /// Returns the smallest value that can be represented by this integer type.
     fn min_value() -> Self {
+        // SAFETY: The user ensures that `MIN` is valid
         unsafe { Self::from_unchecked(Self::MIN) }
     }
-
+    
     /// Returns the largest value that can be represented by this integer type.
     fn max_value() -> Self {
+        // SAFETY: The user ensures that `MAX` is valid
         unsafe { Self::from_unchecked(Self::MAX) }
     }
 }
@@ -80,6 +83,7 @@ pub const fn from_lossy<
 >(
     n: T,
 ) -> I {
+    // SAFETY: `from_unchecked` is masked, making it a valid value
     unsafe { I::from_unchecked(n).mask() }
 }
 
@@ -248,6 +252,14 @@ pub macro fn_wrapping($($fn_name:ident => $wrap_name:ident,)*) {
 
 #[doc(hidden)]
 pub macro impl_common($ty:ty, $signed:literal) {
+    impl<const BITS: u32> const WrappingFrom<$ty> for int<$ty, BITS> {
+        /// Convert a `T` into the target. Only the `BITS` amount are kept.
+        fn from_wrapping(val: $ty) -> Self {
+            // SAFETY: `from_unchecked` is wrapped, making it a valid value
+            unsafe { Self::from_unchecked(val).wrap() }
+        }
+    }
+
     impl<const BITS: u32> const LossyFrom<$ty> for int<$ty, BITS> {
         /// Convert a `T` into the target. Only the `BITS` amount are kept.
         fn from_lossy(val: $ty) -> Self {
@@ -470,6 +482,12 @@ mod test {
     fn type_inference() {
         let _: int<u8, 6> = int::from_lossy(5);
         let _: int<i32, 15> = int::from_lossy(5);
+    }
+
+    #[test]
+    fn from_wrapping() {
+        let x: int<u8, 6> = int::from_wrapping(65);
+        assert_eq!(x.as_ref(), &1);
     }
 
     mod unsigned_common {
@@ -938,9 +956,6 @@ mod test {
                     i6::from_lossy(5).overflowing_sub(2.into_lossy()),
                     (i6::from_lossy(3), false)
                 );
-                unsafe {
-                    println!("{:?}", i6::from_unchecked(i6::MIN - 1).wrapped());
-                }
                 assert_eq!(
                     i6::from_lossy(i6::MIN).overflowing_sub(1.into_lossy()),
                     (i6::from_lossy(i6::MAX), true)

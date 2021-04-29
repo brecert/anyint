@@ -1,5 +1,24 @@
 use std::convert::From;
 
+pub trait WrappingInto<T>: Sized {
+  /// Performs the conversion, possibly wrapping around in the process.
+  fn into_wrapping(self) -> T;
+}
+
+pub trait WrappingFrom<T>: Sized {
+  /// Performs the conversion, possibly losing data in the process.
+  fn from_wrapping(_: T) -> Self;
+}
+
+impl<T, U> WrappingInto<U> for T
+where
+  U: WrappingFrom<T>,
+{
+  fn into_wrapping(self) -> U {
+    U::from_wrapping(self)
+  }
+}
+
 pub trait LossyInto<T>: Sized {
   /// Performs the conversion, possibly losing data in the process.
   fn into_lossy(self) -> T;
