@@ -29,6 +29,7 @@ pub struct OutOfRangeIntError;
 
 // todo: const trait implementations
 // todo: maybe default implementations should not require `Self` traits
+/// Provides a base implementation for what a `NonStandardInteger` needs.
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
@@ -84,7 +85,7 @@ pub const fn from_lossy<
 }
 
 /// Provides integer methods.
-pub trait NonStandardIntegerExt<T: PartialOrd + Copy, const BITS: u32, const SIGNED: bool>:
+pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const SIGNED: bool>:
     NonStandardInteger<T, BITS, SIGNED>
 {
     /// Checked integer addition. Computes `self + rhs`, returning `None`
@@ -287,7 +288,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
     #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
     /// assert_eq!(x.as_ref(), &10);
     /// ```
-    impl<const BITS: u32> const NonStandardIntegerExt<$ty, BITS, $signed> for int<$ty, BITS> {
+    impl<const BITS: u32> const NonStandardIntegerCommon<$ty, BITS, $signed> for int<$ty, BITS> {
         // checked implementations are not based on overflowing implementations because they can be implemented independently a little more performant.
         // todo: check performance...
         fn_checked!(

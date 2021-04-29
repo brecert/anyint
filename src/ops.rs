@@ -1,9 +1,9 @@
-use crate::{int, NonStandardIntegerExt};
+use crate::{int, NonStandardIntegerCommon};
 use std::ops::{Add, Div, Mul, Sub};
 
 impl<T: PartialOrd + Copy, const BITS: u32> Add for int<T, BITS>
 where
-  Self: NonStandardIntegerExt<T, BITS, false>,
+  Self: NonStandardIntegerCommon<T, BITS, false>,
 {
   type Output = Self;
 
@@ -16,7 +16,7 @@ where
 
 impl<T: PartialOrd + Copy, const BITS: u32> Sub for int<T, BITS>
 where
-  Self: NonStandardIntegerExt<T, BITS, false>,
+  Self: NonStandardIntegerCommon<T, BITS, false>,
 {
   type Output = Self;
 
@@ -29,7 +29,7 @@ where
 
 impl<T: PartialOrd + Copy, const BITS: u32> Mul for int<T, BITS>
 where
-  Self: NonStandardIntegerExt<T, BITS, false>,
+  Self: NonStandardIntegerCommon<T, BITS, false>,
 {
   type Output = Self;
 
@@ -42,7 +42,7 @@ where
 
 impl<T: PartialOrd + Copy, const BITS: u32> Div for int<T, BITS>
 where
-  Self: NonStandardIntegerExt<T, BITS, false>,
+  Self: NonStandardIntegerCommon<T, BITS, false>,
 {
   type Output = Self;
 
