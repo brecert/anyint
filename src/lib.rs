@@ -12,6 +12,7 @@
 
 pub mod clamp;
 pub mod convert;
+pub mod ops;
 
 // todo: no std
 // todo: unstable feature flags
@@ -82,22 +83,28 @@ pub const fn from_lossy<
     unsafe { I::from_unchecked(n).mask() }
 }
 
+/// Provides integer methods.
 pub trait NonStandardIntegerExt<T: PartialOrd + Copy, const BITS: u32, const SIGNED: bool>:
     NonStandardInteger<T, BITS, SIGNED>
 {
-    /// Checked integer addition. Computes `self + rhs`, returning `None` if overflow occurred.
+    /// Checked integer addition. Computes `self + rhs`, returning `None`
+    /// if overflow occurred.
     fn checked_add(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer subtraction. Computes `self - rhs`, returning `None` if overflow occurred.
+    /// Checked integer subtraction. Computes `self - rhs`, returning `None`
+    /// if overflow occurred.
     fn checked_sub(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer multiplication. Computes `self * rhs`, returning `None` if overflow occurred.
+    /// Checked integer multiplication. Computes `self * rhs`, returning `None`
+    /// if overflow occurred.
     fn checked_mul(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0`.
+    /// Checked integer division. Computes `self / rhs`, returning `None`
+    /// if `rhs == 0`.
     fn checked_div(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer remainder. Computes `self % rhs`, returning `None` if `rhs == 0`.
+    /// Checked integer remainder. Computes `self % rhs`, returning `None`
+    /// if `rhs == 0`.
     fn checked_rem(self, rhs: Self) -> Option<Self>;
 
     // fn checked_shl(self, rhs: Self) -> Option<Self>;
@@ -179,6 +186,7 @@ pub trait NonStandardIntegerExt<T: PartialOrd + Copy, const BITS: u32, const SIG
     // fn overflowing_pow(self, exp: u32) -> Self;
 }
 
+/// Provides integer methods that only make sense with signed integers.
 pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>:
     NonStandardInteger<T, BITS, true>
 {
