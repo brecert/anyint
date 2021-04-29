@@ -52,6 +52,7 @@ pub unsafe trait UncheckedInto<T>: Sized {
   unsafe fn into_unchecked(self) -> T;
 }
 
+/// Convert a `T` into the target without bounds checking
 pub unsafe trait UncheckedFrom<T>: Sized {
   /// Performs the conversion without checking, possibly performing undefined behavior in the process.
   unsafe fn from_unchecked(_: T) -> Self;

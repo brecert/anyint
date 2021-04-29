@@ -50,8 +50,6 @@ where
     /// The largest value that can be represented by this integer type.
     const MAX: T;
 
-    /// Convert a `T` into the target without bounds checking
-
     // todo: find better name
     /// Limits the inner value to be between `MIN` and `MAX`
     fn clamp(self) -> Self {
@@ -215,6 +213,17 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
 impl<T, const BITS: u32> const AsRef<T> for int<T, BITS> {
     fn as_ref(&self) -> &T {
         &self.0
+    }
+}
+
+// todo: Determine if this fits or not
+impl<T, const BITS: u32> int<T, BITS>
+where
+    Self: LossyFrom<T>,
+{
+    /// Convenience wrapper around `from_lossy`.
+    pub fn new(n: T) -> Self {
+        Self::from_lossy(n)
     }
 }
 
@@ -529,7 +538,7 @@ mod test {
 
         #[test]
         fn from_lossy() {
-            let value = u6::from_lossy(u8::MAX);
+            let value = u6::new(u8::MAX);
             let value_u8: u8 = value.into();
             assert_eq!(value_u8, 63);
         }
@@ -555,8 +564,8 @@ mod test {
             #[test]
             fn checked_add() {
                 assert_eq!(
-                    u6::from_lossy(10).checked_add(5.into_lossy()),
-                    Some(u6::from_lossy(15))
+                    u6::new(10).checked_add(5.into_lossy()),
+                    Some(u6::new(15))
                 );
                 assert_eq!(u6::max_value().checked_add(5.into_lossy()), None)
             }
@@ -564,8 +573,8 @@ mod test {
             #[test]
             fn checked_sub() {
                 assert_eq!(
-                    u6::from_lossy(10).checked_sub(5.into_lossy()),
-                    Some(u6::from_lossy(5))
+                    u6::new(10).checked_sub(5.into_lossy()),
+                    Some(u6::new(5))
                 );
                 assert_eq!(u6::min_value().checked_sub(5.into_lossy()), None)
             }
@@ -573,28 +582,28 @@ mod test {
             #[test]
             fn checked_mul() {
                 assert_eq!(
-                    u6::from_lossy(10).checked_mul(5.into_lossy()),
-                    Some(u6::from_lossy(50))
+                    u6::new(10).checked_mul(5.into_lossy()),
+                    Some(u6::new(50))
                 );
-                assert_eq!(u6::from_lossy(10).checked_mul(10.into_lossy()), None)
+                assert_eq!(u6::new(10).checked_mul(10.into_lossy()), None)
             }
 
             #[test]
             fn checked_div() {
                 assert_eq!(
-                    u6::from_lossy(10).checked_div(5.into_lossy()),
-                    Some(u6::from_lossy(2))
+                    u6::new(10).checked_div(5.into_lossy()),
+                    Some(u6::new(2))
                 );
-                assert_eq!(u6::from_lossy(10).checked_div(0.into_lossy()), None)
+                assert_eq!(u6::new(10).checked_div(0.into_lossy()), None)
             }
 
             #[test]
             fn checked_rem() {
                 assert_eq!(
-                    u6::from_lossy(8).checked_rem(3.into_lossy()),
-                    Some(u6::from_lossy(2))
+                    u6::new(8).checked_rem(3.into_lossy()),
+                    Some(u6::new(2))
                 );
-                assert_eq!(u6::from_lossy(10).checked_rem(0.into_lossy()), None)
+                assert_eq!(u6::new(10).checked_rem(0.into_lossy()), None)
             }
         }
 
@@ -604,8 +613,8 @@ mod test {
             #[test]
             fn saturating_add() {
                 assert_eq!(
-                    u6::from_lossy(10).saturating_add(5.into_lossy()),
-                    u6::from_lossy(15)
+                    u6::new(10).saturating_add(5.into_lossy()),
+                    u6::new(15)
                 );
                 assert_eq!(
                     u6::max_value().saturating_add(5.into_lossy()),
@@ -616,8 +625,8 @@ mod test {
             #[test]
             fn saturating_sub() {
                 assert_eq!(
-                    u6::from_lossy(10).saturating_sub(5.into_lossy()),
-                    u6::from_lossy(5)
+                    u6::new(10).saturating_sub(5.into_lossy()),
+                    u6::new(5)
                 );
                 assert_eq!(
                     u6::min_value().saturating_sub(5.into_lossy()),
@@ -628,19 +637,19 @@ mod test {
             #[test]
             fn saturating_mul() {
                 assert_eq!(
-                    u6::from_lossy(10).saturating_mul(5.into_lossy()),
-                    u6::from_lossy(50)
+                    u6::new(10).saturating_mul(5.into_lossy()),
+                    u6::new(50)
                 );
                 assert_eq!(
-                    u6::from_lossy(10).saturating_mul(10.into_lossy()),
+                    u6::new(10).saturating_mul(10.into_lossy()),
                     u6::max_value()
                 )
             }
 
             #[test]
             fn saturating_pow() {
-                assert_eq!(u6::from_lossy(3).saturating_pow(3), u6::from_lossy(27));
-                assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
+                assert_eq!(u6::new(3).saturating_pow(3), u6::new(27));
+                assert_eq!(u6::new(10).saturating_pow(3), u6::max_value())
             }
         }
 
@@ -650,79 +659,79 @@ mod test {
             #[test]
             fn wrapping_add() {
                 assert_eq!(
-                    u6::from_lossy(5).wrapping_add(2.into_lossy()),
-                    u6::from_lossy(7)
+                    u6::new(5).wrapping_add(2.into_lossy()),
+                    u6::new(7)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MAX).wrapping_add(2.into_lossy()),
-                    u6::from_lossy(u6::MIN + 1)
+                    u6::new(u6::MAX).wrapping_add(2.into_lossy()),
+                    u6::new(u6::MIN + 1)
                 );
             }
 
             #[test]
             fn wrapping_sub() {
                 assert_eq!(
-                    u6::from_lossy(5).wrapping_sub(2.into_lossy()),
-                    u6::from_lossy(3)
+                    u6::new(5).wrapping_sub(2.into_lossy()),
+                    u6::new(3)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MIN).wrapping_sub(1.into_lossy()),
-                    u6::from_lossy(u6::MAX)
+                    u6::new(u6::MIN).wrapping_sub(1.into_lossy()),
+                    u6::new(u6::MAX)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MIN).wrapping_sub(20.into_lossy()),
-                    u6::from_lossy(u6::MAX - 19)
+                    u6::new(u6::MIN).wrapping_sub(20.into_lossy()),
+                    u6::new(u6::MAX - 19)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).wrapping_sub(32.into_lossy()),
-                    u6::from_lossy(0)
+                    u6::new(32).wrapping_sub(32.into_lossy()),
+                    u6::new(0)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).wrapping_sub(33.into_lossy()),
-                    u6::from_lossy(u6::MAX)
+                    u6::new(32).wrapping_sub(33.into_lossy()),
+                    u6::new(u6::MAX)
                 );
                 assert_eq!(
-                    u6::from_lossy(0).wrapping_sub(10.into_lossy()),
-                    u6::from_lossy(u6::MAX - 9)
+                    u6::new(0).wrapping_sub(10.into_lossy()),
+                    u6::new(u6::MAX - 9)
                 );
             }
 
             #[test]
             fn wrapping_mul() {
                 assert_eq!(
-                    u6::from_lossy(5).wrapping_mul(2.into_lossy()),
-                    u6::from_lossy(10)
+                    u6::new(5).wrapping_mul(2.into_lossy()),
+                    u6::new(10)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).wrapping_mul(2.into_lossy()),
-                    u6::from_lossy(0)
+                    u6::new(32).wrapping_mul(2.into_lossy()),
+                    u6::new(0)
                 );
                 assert_eq!(
-                    u6::from_lossy(10).wrapping_mul(10.into_lossy()),
-                    u6::from_lossy(36)
+                    u6::new(10).wrapping_mul(10.into_lossy()),
+                    u6::new(36)
                 );
             }
 
             #[test]
             fn wrapping_div() {
                 assert_eq!(
-                    u6::from_lossy(6).wrapping_div(2.into_lossy()),
-                    u6::from_lossy(3)
+                    u6::new(6).wrapping_div(2.into_lossy()),
+                    u6::new(3)
                 );
                 assert_eq!(
-                    u6::from_lossy(10).wrapping_div(3.into_lossy()),
-                    u6::from_lossy(3)
+                    u6::new(10).wrapping_div(3.into_lossy()),
+                    u6::new(3)
                 );
                 assert_eq!(
-                    u6::from_lossy(0).wrapping_div(3.into_lossy()),
-                    u6::from_lossy(0)
+                    u6::new(0).wrapping_div(3.into_lossy()),
+                    u6::new(0)
                 );
             }
 
             #[test]
             #[should_panic]
             fn wrapping_div_with_zero() {
-                u6::from_lossy(3).wrapping_div(0.into_lossy());
+                u6::new(3).wrapping_div(0.into_lossy());
             }
         }
 
@@ -732,79 +741,79 @@ mod test {
             #[test]
             fn overflowing_add() {
                 assert_eq!(
-                    u6::from_lossy(5).overflowing_add(2.into_lossy()),
-                    (u6::from_lossy(7), false)
+                    u6::new(5).overflowing_add(2.into_lossy()),
+                    (u6::new(7), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MAX).overflowing_add(2.into_lossy()),
-                    (u6::from_lossy(u6::MIN + 1), true)
+                    u6::new(u6::MAX).overflowing_add(2.into_lossy()),
+                    (u6::new(u6::MIN + 1), true)
                 );
             }
 
             #[test]
             fn overflowing_sub() {
                 assert_eq!(
-                    u6::from_lossy(5).overflowing_sub(2.into_lossy()),
-                    (u6::from_lossy(3), false)
+                    u6::new(5).overflowing_sub(2.into_lossy()),
+                    (u6::new(3), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MIN).overflowing_sub(1.into_lossy()),
-                    (u6::from_lossy(u6::MAX), true)
+                    u6::new(u6::MIN).overflowing_sub(1.into_lossy()),
+                    (u6::new(u6::MAX), true)
                 );
                 assert_eq!(
-                    u6::from_lossy(u6::MIN).overflowing_sub(20.into_lossy()),
-                    (u6::from_lossy(u6::MAX - 19), true)
+                    u6::new(u6::MIN).overflowing_sub(20.into_lossy()),
+                    (u6::new(u6::MAX - 19), true)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).overflowing_sub(32.into_lossy()),
-                    (u6::from_lossy(0), false)
+                    u6::new(32).overflowing_sub(32.into_lossy()),
+                    (u6::new(0), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).overflowing_sub(33.into_lossy()),
-                    (u6::from_lossy(u6::MAX), true)
+                    u6::new(32).overflowing_sub(33.into_lossy()),
+                    (u6::new(u6::MAX), true)
                 );
                 assert_eq!(
-                    u6::from_lossy(0).overflowing_sub(10.into_lossy()),
-                    (u6::from_lossy(u6::MAX - 9), true)
+                    u6::new(0).overflowing_sub(10.into_lossy()),
+                    (u6::new(u6::MAX - 9), true)
                 );
             }
 
             #[test]
             fn overflowing_mul() {
                 assert_eq!(
-                    u6::from_lossy(5).overflowing_mul(2.into_lossy()),
-                    (u6::from_lossy(10), false)
+                    u6::new(5).overflowing_mul(2.into_lossy()),
+                    (u6::new(10), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(32).overflowing_mul(2.into_lossy()),
-                    (u6::from_lossy(0), true)
+                    u6::new(32).overflowing_mul(2.into_lossy()),
+                    (u6::new(0), true)
                 );
                 assert_eq!(
-                    u6::from_lossy(10).overflowing_mul(10.into_lossy()),
-                    (u6::from_lossy(36), true)
+                    u6::new(10).overflowing_mul(10.into_lossy()),
+                    (u6::new(36), true)
                 );
             }
 
             #[test]
             fn overflowing_div() {
                 assert_eq!(
-                    u6::from_lossy(6).overflowing_div(2.into_lossy()),
-                    (u6::from_lossy(3), false)
+                    u6::new(6).overflowing_div(2.into_lossy()),
+                    (u6::new(3), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(10).overflowing_div(3.into_lossy()),
-                    (u6::from_lossy(3), false)
+                    u6::new(10).overflowing_div(3.into_lossy()),
+                    (u6::new(3), false)
                 );
                 assert_eq!(
-                    u6::from_lossy(0).overflowing_div(3.into_lossy()),
-                    (u6::from_lossy(0), false)
+                    u6::new(0).overflowing_div(3.into_lossy()),
+                    (u6::new(0), false)
                 );
             }
 
             #[test]
             #[should_panic]
             fn overflowing_div_with_zero() {
-                u6::from_lossy(3).overflowing_div(0.into_lossy());
+                u6::new(3).overflowing_div(0.into_lossy());
             }
         }
     }
@@ -877,8 +886,8 @@ mod test {
             #[test]
             fn saturating_add() {
                 assert_eq!(
-                    i6::from_lossy(10).saturating_add(5.into_lossy()),
-                    i6::from_lossy(15)
+                    i6::new(10).saturating_add(5.into_lossy()),
+                    i6::new(15)
                 );
                 assert_eq!(
                     i6::max_value().saturating_add(5.into_lossy()),
@@ -889,8 +898,8 @@ mod test {
             #[test]
             fn saturating_sub() {
                 assert_eq!(
-                    i6::from_lossy(10).saturating_sub(5.into_lossy()),
-                    i6::from_lossy(5)
+                    i6::new(10).saturating_sub(5.into_lossy()),
+                    i6::new(5)
                 );
                 assert_eq!(
                     i6::min_value().saturating_sub(5.into_lossy()),
@@ -901,33 +910,33 @@ mod test {
             #[test]
             fn saturating_mul() {
                 assert_eq!(
-                    i6::from_lossy(10).saturating_mul(2.into_lossy()),
-                    i6::from_lossy(20)
+                    i6::new(10).saturating_mul(2.into_lossy()),
+                    i6::new(20)
                 );
                 assert_eq!(
-                    i6::from_lossy(10).saturating_mul(10.into_lossy()),
+                    i6::new(10).saturating_mul(10.into_lossy()),
                     i6::max_value()
                 )
             }
 
             #[test]
             fn saturating_pow() {
-                assert_eq!(i6::from_lossy(3).saturating_pow(3), i6::from_lossy(27));
-                assert_eq!(i6::from_lossy(10).saturating_pow(5), i6::max_value())
+                assert_eq!(i6::new(3).saturating_pow(3), i6::new(27));
+                assert_eq!(i6::new(10).saturating_pow(5), i6::max_value())
             }
 
             #[test]
             fn saturating_neg() {
-                assert_eq!(i6::from_lossy(3).saturating_neg(), i6::from_lossy(-3));
-                assert_eq!(i6::from_lossy(-3).saturating_neg(), i6::from_lossy(3));
-                assert_eq!(i6::max_value().saturating_neg(), i6::from_lossy(-31));
+                assert_eq!(i6::new(3).saturating_neg(), i6::new(-3));
+                assert_eq!(i6::new(-3).saturating_neg(), i6::new(3));
+                assert_eq!(i6::max_value().saturating_neg(), i6::new(-31));
                 assert_eq!(i6::min_value().saturating_neg(), i6::max_value());
             }
 
             #[test]
             fn saturating_abs() {
-                assert_eq!(i6::from_lossy(3).saturating_abs(), i6::from_lossy(3));
-                assert_eq!(i6::from_lossy(-3).saturating_abs(), i6::from_lossy(3));
+                assert_eq!(i6::new(3).saturating_abs(), i6::new(3));
+                assert_eq!(i6::new(-3).saturating_abs(), i6::new(3));
                 assert_eq!(i6::max_value().saturating_abs(), i6::max_value());
                 assert_eq!(i6::min_value().saturating_abs(), i6::max_value());
             }
@@ -939,79 +948,79 @@ mod test {
             #[test]
             fn overflowing_add() {
                 assert_eq!(
-                    i6::from_lossy(5).overflowing_add(2.into_lossy()),
-                    (i6::from_lossy(7), false)
+                    i6::new(5).overflowing_add(2.into_lossy()),
+                    (i6::new(7), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(i6::MAX).overflowing_add(2.into_lossy()),
-                    (i6::from_lossy(i6::MIN + 1), true)
+                    i6::new(i6::MAX).overflowing_add(2.into_lossy()),
+                    (i6::new(i6::MIN + 1), true)
                 );
             }
 
             #[test]
             fn overflowing_sub() {
                 assert_eq!(
-                    i6::from_lossy(5).overflowing_sub(2.into_lossy()),
-                    (i6::from_lossy(3), false)
+                    i6::new(5).overflowing_sub(2.into_lossy()),
+                    (i6::new(3), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(i6::MIN).overflowing_sub(1.into_lossy()),
-                    (i6::from_lossy(i6::MAX), true)
+                    i6::new(i6::MIN).overflowing_sub(1.into_lossy()),
+                    (i6::new(i6::MAX), true)
                 );
                 assert_eq!(
-                    i6::from_lossy(i6::MIN).overflowing_sub(20.into_lossy()),
-                    (i6::from_lossy(i6::MAX - 19), true)
+                    i6::new(i6::MIN).overflowing_sub(20.into_lossy()),
+                    (i6::new(i6::MAX - 19), true)
                 );
                 assert_eq!(
-                    i6::from_lossy(32).overflowing_sub(32.into_lossy()),
-                    (i6::from_lossy(0), false)
+                    i6::new(32).overflowing_sub(32.into_lossy()),
+                    (i6::new(0), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(i6::MAX - 2).overflowing_sub((i6::MAX - 1).into_lossy()),
-                    (i6::from_lossy(-1), true)
+                    i6::new(i6::MAX - 2).overflowing_sub((i6::MAX - 1).into_lossy()),
+                    (i6::new(-1), true)
                 );
                 assert_eq!(
-                    i6::from_lossy(i6::MIN).overflowing_sub(10.into_lossy()),
-                    (i6::from_lossy(i6::MAX - 9), true)
+                    i6::new(i6::MIN).overflowing_sub(10.into_lossy()),
+                    (i6::new(i6::MAX - 9), true)
                 );
             }
 
             #[test]
             fn overflowing_mul() {
                 assert_eq!(
-                    i6::from_lossy(5).overflowing_mul(2.into_lossy()),
-                    (i6::from_lossy(10), false)
+                    i6::new(5).overflowing_mul(2.into_lossy()),
+                    (i6::new(10), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(16).overflowing_mul(4.into_lossy()),
-                    (i6::from_lossy(0), true)
+                    i6::new(16).overflowing_mul(4.into_lossy()),
+                    (i6::new(0), true)
                 );
                 assert_eq!(
-                    i6::from_lossy(30).overflowing_mul(30.into_lossy()),
-                    (i6::from_lossy(4), true)
+                    i6::new(30).overflowing_mul(30.into_lossy()),
+                    (i6::new(4), true)
                 );
             }
 
             #[test]
             fn overflowing_div() {
                 assert_eq!(
-                    i6::from_lossy(6).overflowing_div(2.into_lossy()),
-                    (i6::from_lossy(3), false)
+                    i6::new(6).overflowing_div(2.into_lossy()),
+                    (i6::new(3), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(10).overflowing_div(3.into_lossy()),
-                    (i6::from_lossy(3), false)
+                    i6::new(10).overflowing_div(3.into_lossy()),
+                    (i6::new(3), false)
                 );
                 assert_eq!(
-                    i6::from_lossy(0).overflowing_div(3.into_lossy()),
-                    (i6::from_lossy(0), false)
+                    i6::new(0).overflowing_div(3.into_lossy()),
+                    (i6::new(0), false)
                 );
             }
 
             #[test]
             #[should_panic]
             fn overflowing_div_with_zero() {
-                i6::from_lossy(3).overflowing_div(0.into_lossy());
+                i6::new(3).overflowing_div(0.into_lossy());
             }
         }
     }
