@@ -26,7 +26,8 @@ use thiserror::Error;
 #[error("out of range type conversion attempted")]
 pub struct OutOfRangeIntError;
 
-// todo: Const trait implementations
+// todo: const trait implementations
+// todo: maybe default implementations should not require `Self` traits
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
@@ -416,6 +417,12 @@ mod test {
     use super::*;
     use convert::LossyInto;
     use std::convert::TryInto;
+
+    #[test]
+    fn type_inference() {
+        let _: int<u8, 6> = int::from_lossy(5);
+        let _: int<i32, 15> = int::from_lossy(5);
+    }
 
     mod unsigned_common {
         use super::*;
