@@ -5,7 +5,9 @@
     const_trait_impl,
     const_refs_to_cell,
     associated_type_defaults,
-    specialization
+    specialization,
+    int_bits_const,
+    extended_key_value_attributes
 )]
 
 pub mod clamp;
@@ -13,7 +15,7 @@ pub mod convert;
 
 // todo: no std
 // todo: unstable feature flags
-use crate::clamp::Clamp;
+use crate::clamp::{Clamp, Wrap};
 use crate::convert::{LossyFrom, UncheckedFrom};
 use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
@@ -24,11 +26,12 @@ use thiserror::Error;
 #[error("out of range type conversion attempted")]
 pub struct OutOfRangeIntError;
 
-// todo: Const trait implementations
+// todo: const trait implementations
+// todo: maybe default implementations should not require `Self` traits
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
-    Self: LossyFrom<T> + UncheckedFrom<T>,
+    Self: LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
 {
     // TODO: find a better name for this.
     /// The underlying representation of the integer.
@@ -48,15 +51,10 @@ where
 
     /// Convert a `T` into the target without bounds checking
 
-    // temporary
-    // todo: better names, documentation and usage
-    /// Gets a reference to the value of `T`
-    fn get_ref(&self) -> T;
-
     // todo: find better name
     /// Limits the inner value to be between the `MIN` and `MAX`
     fn mask(self) -> Self {
-        let clamped = (Self::MIN..Self::MAX).clamp(self.get_ref());
+        let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
         unsafe { Self::from_unchecked(clamped) }
     }
 
@@ -126,13 +124,38 @@ pub trait NonStandardIntegerExt<T: PartialOrd + Copy, const BITS: u32, const SIG
     // fn wrapping_shl(self, exp: Self) -> Self;
     // fn wrapping_shr(self, exp: Self) -> Self;
     // fn wrapping_pow(self, exp: u32) -> Self;
-    // fn overflowing_add(self, exp: Self) -> Self;
-    // fn overflowing_sub(self, exp: Self) -> Self;
-    // fn overflowing_mul(self, exp: Self) -> Self;
-    // fn overflowing_div(self, exp: Self) -> Self;
-    // fn overflowing_rem(self, exp: Self) -> Self;
-    // fn overflowing_shl(self, exp: Self) -> Self;
-    // fn overflowing_shr(self, exp: Self) -> Self;
+
+    /// Calculates `self` + `rhs`
+    ///
+    /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would
+    /// occur. If an overflow would have occurred then the wrapped value is returned.
+    fn overflowing_add(self, rhs: Self) -> (Self, bool);
+
+    /// Calculates `self` - `rhs`
+    ///
+    /// Returns a tuple of the subtraction along with a boolean indicating whether an arithmetic overflow
+    /// would occur. If an overflow would have occurred then the wrapped value is returned.
+    fn overflowing_sub(self, rhs: Self) -> (Self, bool);
+
+    /// Calculates the multiplication of `self` and `rhs`.
+    ///
+    /// Returns a tuple of the multiplication along with a boolean indicating whether an arithmetic overflow
+    /// would occur. If an overflow would have occurred then the wrapped value is returned.
+    fn overflowing_mul(self, rhs: Self) -> (Self, bool);
+
+    /// Calculates the divisor when `self` is divided by `rhs`.
+    ///
+    /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would
+    /// occur. If an overflow would occur then self is returned.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `rhs` is 0.
+    fn overflowing_div(self, rhs: Self) -> (Self, bool);
+
+    // fn overflowing_rem(self, rhs: Self) -> Self;
+    // fn overflowing_shl(self, rhs: Self) -> Self;
+    // fn overflowing_shr(self, rhs: Self) -> Self;
     // fn overflowing_pow(self, exp: u32) -> Self;
 }
 
@@ -159,11 +182,17 @@ impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     }
 }
 
+impl<T, const BITS: u32> const AsRef<T> for int<T, BITS> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
 #[doc(hidden)]
 pub macro fn_checked($($name:ident,)*) {
     $(
         fn $name(self, rhs: Self) -> Option<Self> {
-            match self.get_ref().$name(rhs.get_ref()) {
+            match self.as_ref().$name(*rhs.as_ref()) {
                 Some(val) if val <= Self::MAX => Some(Self(val)),
                 _ => None
             }
@@ -175,7 +204,7 @@ pub macro fn_checked($($name:ident,)*) {
 pub macro fn_saturating($($name:ident,)*) {
     $(
         fn $name(self, rhs: Self) -> Self {
-            from_lossy(self.get_ref().$name(rhs.get_ref()))
+            from_lossy(self.as_ref().$name(*rhs.as_ref()))
         }
     )*
 }
@@ -196,7 +225,15 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
     }
 
+    /// ```
+    /// use anyint::*;
+    /// use anyint::convert::*;
+    #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
+    /// assert_eq!(x.as_ref(), &10);
+    /// ```
     impl<const BITS: u32> const NonStandardIntegerExt<$ty, BITS, $signed> for int<$ty, BITS> {
+        // checked implementations are not based on overflowing implementations because they can be implemented independently a little more performant.
+        // todo: check performance...
         fn_checked!(
             checked_add,
             checked_sub,
@@ -208,7 +245,45 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn_saturating!(saturating_add, saturating_sub, saturating_mul,);
 
         fn saturating_pow(self, rhs: u32) -> Self {
-            from_lossy(self.get_ref().saturating_pow(rhs))
+            from_lossy(self.as_ref().saturating_pow(rhs))
+        }
+
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::max_value().overflowing_add(N6::from_lossy(1)), (N6::min_value(), true));
+        /// assert_eq!(N6::min_value().overflowing_add(N6::from_lossy(1)), (N6::from_lossy(N6::MIN + 1), false));
+        /// ```
+        fn overflowing_add(self, rhs: Self) -> (Self, bool) {
+            Self(*self.as_ref() + *rhs.as_ref()).wrapped()
+        }
+
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
+        /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
+        /// ```
+        fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
+            let a = *self.as_ref();
+            let b = *rhs.as_ref();
+
+            if a >= b {
+                (Self(a - b), false)
+            } else {
+                (Self((1 << Self::BITS) - (b - a)).wrap(), true)
+            }
+        }
+
+        fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
+            Self(self.as_ref().wrapping_mul(*rhs.as_ref())).wrapped()
+        }
+
+        // todo: specialize for unsigned so that optimized normal division
+        fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+            Self(*self.as_ref() / *rhs.as_ref()).wrapped()
         }
     }
 
@@ -229,7 +304,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
     impl<const BITS: u32> const From<int<$ty, BITS>> for $ty {
         #[inline]
         fn from(data: int<$ty, BITS>) -> Self {
-            data.get_ref()
+            *data.as_ref()
         }
     }
 }
@@ -237,41 +312,60 @@ pub macro impl_common($ty:ty, $signed:literal) {
 #[doc(hidden)]
 pub macro impl_nonstandard_int {
     (unsigned: $ty: ty) => {
+        impl<const BITS: u32> const Wrap<Self> for int<$ty, BITS> {
+            #[inline]
+            fn wrapped(self) -> (Self, bool) {
+                let wrapped = self.0 & Self::MAX;
+                (Self(wrapped), self.0 != wrapped)
+            }
+
+            #[inline]
+            fn wrap(self) -> Self {
+                self.wrapped().0
+            }
+        }
+
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS, false> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS) - 1;
             const MIN: $ty = 0;
-
-            fn get_ref(&self) -> $ty {
-                return self.0;
-            }
         }
 
         impl_common!($ty, false);
     },
     (signed: $ty: ty) => {
+        impl<const BITS: u32> const Wrap<Self> for int<$ty, BITS> {
+            #[inline]
+            fn wrapped(self) -> (Self, bool) {
+                let offset = <$ty>::BITS - Self::BITS;
+                let wrapped = (self.0 << offset) >> offset;
+                (Self(wrapped), self.0 != wrapped)
+            }
+
+            #[inline]
+            fn wrap(self) -> Self {
+                self.wrapped().0
+            }
+        }
+
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
-
-            fn get_ref(&self) -> $ty {
-                return self.0;
-            }
         }
 
         impl<const BITS: u32> const NonStandardIntegerSigned<$ty, BITS> for int<$ty, BITS> {
             fn saturating_abs(self) -> Self {
-                if self.get_ref() == Self::MIN {
+                if *self.as_ref() == Self::MIN {
                     Self(Self::MAX)
                 } else {
-                    Self(self.get_ref().saturating_abs())
+                    Self(self.as_ref().saturating_abs())
                 }
             }
 
             fn saturating_neg(self) -> Self {
-                if self.get_ref() == Self::MIN {
+                if *self.as_ref() == Self::MIN {
                     Self(Self::MAX)
                 } else {
-                    Self(self.get_ref().saturating_neg())
+                    Self(self.as_ref().saturating_neg())
                 }
             }
         }
@@ -294,17 +388,41 @@ impl_nonstandard_int!(signed: i64);
 impl_nonstandard_int!(signed: i128);
 impl_nonstandard_int!(signed: isize);
 
+#[cfg(doctest)]
+mod doctest {
+    use super::*;
+
+    /// ```compile_fail
+    /// use anyint::*;
+    /// let x = anyint::int::<i8, 8>::MAX;
+    /// ```
+    pub struct SIntOnlyTakesValidSize;
+
+    /// ```compile_fail
+    /// use anyint::*;
+    /// let x = anyint::int::<u8, 8>::MAX;
+    /// ```
+    pub struct UIntOnlyTakesValidSize;
+
+    /// ```
+    /// use anyint::*;
+    /// let x = int::<u8, 7>::MAX;
+    /// let x = int::<i8, 7>::MAX;
+    /// ```
+    pub struct IntTakesValidSizes;
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use convert::LossyInto;
     use std::convert::TryInto;
 
-    // #[test]
-    // #[ignore = "not yet implemented due to rust's current type system"]
-    // fn test_invalid_bits_size() {
-    //     let _ = int::<u8, 8>::MAX;
-    // }
+    #[test]
+    fn type_inference() {
+        let _: int<u8, 6> = int::from_lossy(5);
+        let _: int<i32, 15> = int::from_lossy(5);
+    }
 
     mod unsigned_common {
         use super::*;
@@ -461,6 +579,88 @@ mod test {
                 assert_eq!(u6::from_lossy(10).saturating_pow(3), u6::max_value())
             }
         }
+
+        mod overflowing {
+            use super::*;
+
+            #[test]
+            fn overflowing_add() {
+                assert_eq!(
+                    u6::from_lossy(5).overflowing_add(2.into_lossy()),
+                    (u6::from_lossy(7), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MAX).overflowing_add(2.into_lossy()),
+                    (u6::from_lossy(u6::MIN + 1), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_sub() {
+                assert_eq!(
+                    u6::from_lossy(5).overflowing_sub(2.into_lossy()),
+                    (u6::from_lossy(3), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MIN).overflowing_sub(1.into_lossy()),
+                    (u6::from_lossy(u6::MAX), true)
+                );
+                assert_eq!(
+                    u6::from_lossy(u6::MIN).overflowing_sub(20.into_lossy()),
+                    (u6::from_lossy(u6::MAX - 19), true)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).overflowing_sub(32.into_lossy()),
+                    (u6::from_lossy(0), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).overflowing_sub(33.into_lossy()),
+                    (u6::from_lossy(u6::MAX), true)
+                );
+                assert_eq!(
+                    u6::from_lossy(0).overflowing_sub(10.into_lossy()),
+                    (u6::from_lossy(u6::MAX - 9), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_mul() {
+                assert_eq!(
+                    u6::from_lossy(5).overflowing_mul(2.into_lossy()),
+                    (u6::from_lossy(10), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(32).overflowing_mul(2.into_lossy()),
+                    (u6::from_lossy(0), true)
+                );
+                assert_eq!(
+                    u6::from_lossy(10).overflowing_mul(10.into_lossy()),
+                    (u6::from_lossy(36), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_div() {
+                assert_eq!(
+                    u6::from_lossy(6).overflowing_div(2.into_lossy()),
+                    (u6::from_lossy(3), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(10).overflowing_div(3.into_lossy()),
+                    (u6::from_lossy(3), false)
+                );
+                assert_eq!(
+                    u6::from_lossy(0).overflowing_div(3.into_lossy()),
+                    (u6::from_lossy(0), false)
+                );
+            }
+
+            #[test]
+            #[should_panic]
+            fn overflowing_div_with_zero() {
+                u6::from_lossy(3).overflowing_div(0.into_lossy());
+            }
+        }
     }
 
     mod signed {
@@ -584,6 +784,91 @@ mod test {
                 assert_eq!(i6::from_lossy(-3).saturating_abs(), i6::from_lossy(3));
                 assert_eq!(i6::max_value().saturating_abs(), i6::max_value());
                 assert_eq!(i6::min_value().saturating_abs(), i6::max_value());
+            }
+        }
+
+        mod overflowing {
+            use super::*;
+
+            #[test]
+            fn overflowing_add() {
+                assert_eq!(
+                    i6::from_lossy(5).overflowing_add(2.into_lossy()),
+                    (i6::from_lossy(7), false)
+                );
+                assert_eq!(
+                    i6::from_lossy(i6::MAX).overflowing_add(2.into_lossy()),
+                    (i6::from_lossy(i6::MIN + 1), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_sub() {
+                assert_eq!(
+                    i6::from_lossy(5).overflowing_sub(2.into_lossy()),
+                    (i6::from_lossy(3), false)
+                );
+                unsafe {
+                    println!("{:?}", i6::from_unchecked(i6::MIN - 1).wrapped());
+                }
+                assert_eq!(
+                    i6::from_lossy(i6::MIN).overflowing_sub(1.into_lossy()),
+                    (i6::from_lossy(i6::MAX), true)
+                );
+                assert_eq!(
+                    i6::from_lossy(i6::MIN).overflowing_sub(20.into_lossy()),
+                    (i6::from_lossy(i6::MAX - 19), true)
+                );
+                assert_eq!(
+                    i6::from_lossy(32).overflowing_sub(32.into_lossy()),
+                    (i6::from_lossy(0), false)
+                );
+                assert_eq!(
+                    i6::from_lossy(i6::MAX - 2).overflowing_sub((i6::MAX - 1).into_lossy()),
+                    (i6::from_lossy(-1), true)
+                );
+                assert_eq!(
+                    i6::from_lossy(i6::MIN).overflowing_sub(10.into_lossy()),
+                    (i6::from_lossy(i6::MAX - 9), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_mul() {
+                assert_eq!(
+                    i6::from_lossy(5).overflowing_mul(2.into_lossy()),
+                    (i6::from_lossy(10), false)
+                );
+                assert_eq!(
+                    i6::from_lossy(16).overflowing_mul(4.into_lossy()),
+                    (i6::from_lossy(0), true)
+                );
+                assert_eq!(
+                    i6::from_lossy(30).overflowing_mul(30.into_lossy()),
+                    (i6::from_lossy(4), true)
+                );
+            }
+
+            #[test]
+            fn overflowing_div() {
+                assert_eq!(
+                    i6::from_lossy(6).overflowing_div(2.into_lossy()),
+                    (i6::from_lossy(3), false)
+                );
+                assert_eq!(
+                    i6::from_lossy(10).overflowing_div(3.into_lossy()),
+                    (i6::from_lossy(3), false)
+                );
+                assert_eq!(
+                    i6::from_lossy(0).overflowing_div(3.into_lossy()),
+                    (i6::from_lossy(0), false)
+                );
+            }
+
+            #[test]
+            #[should_panic]
+            fn overflowing_div_with_zero() {
+                i6::from_lossy(3).overflowing_div(0.into_lossy());
             }
         }
     }
