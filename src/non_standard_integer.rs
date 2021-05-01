@@ -1,4 +1,4 @@
-use crate::clamp::Clamp;
+use crate::clamp::clamp;
 use crate::convert::{LossyFrom, UncheckedFrom};
 
 // todo: const trait implementations
@@ -28,7 +28,7 @@ where
     // todo: find better name
     /// Limits the inner value to be between `MIN` and `MAX`
     fn clamp(self) -> Self {
-        let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
+        let clamped = clamp(&(Self::MIN..Self::MAX), *self.as_ref());
         // SAFETY: the value has already been clamped to be in the valid range of `int`
         unsafe { Self::from_unchecked(clamped) }
     }
