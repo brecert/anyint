@@ -12,12 +12,16 @@
 
 pub mod clamp;
 pub mod convert;
+pub mod non_standard_integer;
 pub mod ops;
 
 // todo: no std
 // todo: unstable feature flags
-use crate::clamp::{Clamp, Wrap};
+use crate::clamp::Wrap;
 use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
+pub use crate::non_standard_integer::{
+    NonStandardInteger, NonStandardIntegerCommon, NonStandardIntegerSigned,
+};
 use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -26,49 +30,6 @@ use thiserror::Error;
 #[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[error("out of range type conversion attempted")]
 pub struct OutOfRangeIntError;
-
-// todo: const trait implementations
-// todo: maybe default implementations should not require `Self` traits
-/// Provides a base implementation for what a `NonStandardInteger` needs.
-pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
-where
-    T: PartialOrd + Copy,
-    Self: LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
-{
-    // TODO: find a better name for this.
-    /// The underlying representation of the integer.
-    type Repr = T;
-
-    /// Represents if this integer type is considered to be signed or not.
-    const SIGNED: bool = SIGNED;
-
-    /// The size of this integer type in bits.
-    const BITS: u32 = BITS;
-
-    /// The smallest value that can be represented by this integer type.
-    const MIN: T;
-
-    /// The largest value that can be represented by this integer type.
-    const MAX: T;
-
-    // todo: find better name
-    /// Limits the inner value to be between `MIN` and `MAX`
-    fn clamp(self) -> Self {
-        let clamped = (Self::MIN..Self::MAX).clamp(*self.as_ref());
-        // SAFETY: the value has already been clamped to be in the valid range of `int`
-        unsafe { Self::from_unchecked(clamped) }
-    }
-    /// Returns the smallest value that can be represented by this integer type.
-    fn min_value() -> Self {
-        // SAFETY: The user ensures that `MIN` is valid
-        unsafe { Self::from_unchecked(Self::MIN) }
-    }
-    /// Returns the largest value that can be represented by this integer type.
-    fn max_value() -> Self {
-        // SAFETY: The user ensures that `MAX` is valid
-        unsafe { Self::from_unchecked(Self::MAX) }
-    }
-}
 
 #[inline(always)]
 #[doc(hidden)]
@@ -82,120 +43,6 @@ pub const fn from_lossy<
 ) -> I {
     // SAFETY: `from_unchecked` is clamped, making it a valid value
     unsafe { I::from_unchecked(n).clamp() }
-}
-
-/// Provides integer methods.
-pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const SIGNED: bool>:
-    NonStandardInteger<T, BITS, SIGNED>
-{
-    /// Checked integer addition. Computes `self + rhs`, returning `None`
-    /// if overflow occurred.
-    fn checked_add(self, rhs: Self) -> Option<Self>;
-
-    /// Checked integer subtraction. Computes `self - rhs`, returning `None`
-    /// if overflow occurred.
-    fn checked_sub(self, rhs: Self) -> Option<Self>;
-
-    /// Checked integer multiplication. Computes `self * rhs`, returning `None`
-    /// if overflow occurred.
-    fn checked_mul(self, rhs: Self) -> Option<Self>;
-
-    /// Checked integer division. Computes `self / rhs`, returning `None`
-    /// if `rhs == 0`.
-    fn checked_div(self, rhs: Self) -> Option<Self>;
-
-    /// Checked integer remainder. Computes `self % rhs`, returning `None`
-    /// if `rhs == 0`.
-    fn checked_rem(self, rhs: Self) -> Option<Self>;
-
-    // fn checked_shl(self, rhs: Self) -> Option<Self>;
-    // fn checked_shr(self, rhs: Self) -> Option<Self>;
-    // fn checked_pow(self, rhs: u32) -> Self;
-
-    /// Saturating integer addition. Computes `self + rhs`, saturating at the numeric bounds instead of overflowing.
-    fn saturating_add(self, rhs: Self) -> Self;
-
-    /// Saturating integer subtraction. Computes `self - rhs`, saturating at the numeric bounds instead of overflowing.
-    fn saturating_sub(self, rhs: Self) -> Self;
-
-    /// Saturating integer multiplication. Computes `self * rhs`, saturating at the numeric bounds instead of overflowing.
-    fn saturating_mul(self, rhs: Self) -> Self;
-
-    /// Saturating integer exponentiation. Computes `self.pow(exp)`, saturating at the numeric bounds instead of overflowing.
-    fn saturating_pow(self, exp: u32) -> Self;
-
-    /// Wrapping (modular) addition. Computes `self + rhs`, wrapping around at the
-    /// boundary of the type.
-    fn wrapping_add(self, rhs: Self) -> Self;
-
-    /// Wrapping (modular) subtraction. Computes `self - rhs`, wrapping around at the
-    /// boundary of the type.
-    fn wrapping_sub(self, rhs: Self) -> Self;
-
-    /// Wrapping (modular) multiplication. Computes `self * rhs`, wrapping around at
-    /// the boundary of the type.
-    fn wrapping_mul(self, rhs: Self) -> Self;
-
-    /// Wrapping (modular) division. Computes `self / rhs`, wrapping around at the
-    /// boundary of the type.
-    ///
-    /// The only case where such wrapping can occur is when one divides `MIN / -1` on a signed type (where
-    /// `MIN` is the negative minimal value for the type); this is equivalent to `-MIN`, a positive value
-    /// that is too large to represent in the type. In such a case, this function returns `MIN` itself.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if `rhs` is 0.
-    fn wrapping_div(self, rhs: Self) -> Self;
-
-    // fn wrapping_rem(self, rhs: Self) -> Self;
-    // fn wrapping_shl(self, rhs: Self) -> Self;
-    // fn wrapping_shr(self, rhs: Self) -> Self;
-    // fn wrapping_pow(self, exp: u32) -> Self;
-
-    /// Calculates `self` + `rhs`
-    ///
-    /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would
-    /// occur. If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_add(self, rhs: Self) -> (Self, bool);
-
-    /// Calculates `self` - `rhs`
-    ///
-    /// Returns a tuple of the subtraction along with a boolean indicating whether an arithmetic overflow
-    /// would occur. If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_sub(self, rhs: Self) -> (Self, bool);
-
-    /// Calculates the multiplication of `self` and `rhs`.
-    ///
-    /// Returns a tuple of the multiplication along with a boolean indicating whether an arithmetic overflow
-    /// would occur. If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_mul(self, rhs: Self) -> (Self, bool);
-
-    /// Calculates the divisor when `self` is divided by `rhs`.
-    ///
-    /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would
-    /// occur. If an overflow would occur then self is returned.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if `rhs` is 0.
-    fn overflowing_div(self, rhs: Self) -> (Self, bool);
-
-    // fn overflowing_rem(self, rhs: Self) -> Self;
-    // fn overflowing_shl(self, rhs: Self) -> Self;
-    // fn overflowing_shr(self, rhs: Self) -> Self;
-    // fn overflowing_pow(self, exp: u32) -> Self;
-}
-
-/// Provides integer methods that only make sense with signed integers.
-pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>:
-    NonStandardInteger<T, BITS, true>
-{
-    /// Saturating absolute value. Computes `self.abs()`, returning `MAX` if `self == MIN` instead of overflowing.
-    fn saturating_abs(self) -> Self;
-
-    /// Saturating integer negation. Computes `-self`, returning `MAX` if `self == MIN` instead of overflowing.
-    fn saturating_neg(self) -> Self;
 }
 
 /// An integer representation that can hold `BITS` amount of information for the given type `T`.
@@ -244,7 +91,7 @@ pub macro fn_checked($($name:ident,)*) {
 pub macro fn_saturating($($name:ident,)*) {
     $(
         fn $name(self, rhs: Self) -> Self {
-            from_lossy(self.as_ref().$name(*rhs.as_ref()))
+            Self::from_lossy(self.as_ref().$name(*rhs.as_ref()))
         }
     )*
 }
@@ -302,7 +149,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn_saturating!(saturating_add, saturating_sub, saturating_mul,);
 
         fn saturating_pow(self, rhs: u32) -> Self {
-            from_lossy(self.as_ref().saturating_pow(rhs))
+            Self::from_lossy(self.as_ref().saturating_pow(rhs))
         }
 
         fn_wrapping!(
@@ -564,46 +411,31 @@ mod test {
 
             #[test]
             fn checked_add() {
-                assert_eq!(
-                    u6::new(10).checked_add(5.into_lossy()),
-                    Some(u6::new(15))
-                );
+                assert_eq!(u6::new(10).checked_add(5.into_lossy()), Some(u6::new(15)));
                 assert_eq!(u6::max_value().checked_add(5.into_lossy()), None)
             }
 
             #[test]
             fn checked_sub() {
-                assert_eq!(
-                    u6::new(10).checked_sub(5.into_lossy()),
-                    Some(u6::new(5))
-                );
+                assert_eq!(u6::new(10).checked_sub(5.into_lossy()), Some(u6::new(5)));
                 assert_eq!(u6::min_value().checked_sub(5.into_lossy()), None)
             }
 
             #[test]
             fn checked_mul() {
-                assert_eq!(
-                    u6::new(10).checked_mul(5.into_lossy()),
-                    Some(u6::new(50))
-                );
+                assert_eq!(u6::new(10).checked_mul(5.into_lossy()), Some(u6::new(50)));
                 assert_eq!(u6::new(10).checked_mul(10.into_lossy()), None)
             }
 
             #[test]
             fn checked_div() {
-                assert_eq!(
-                    u6::new(10).checked_div(5.into_lossy()),
-                    Some(u6::new(2))
-                );
+                assert_eq!(u6::new(10).checked_div(5.into_lossy()), Some(u6::new(2)));
                 assert_eq!(u6::new(10).checked_div(0.into_lossy()), None)
             }
 
             #[test]
             fn checked_rem() {
-                assert_eq!(
-                    u6::new(8).checked_rem(3.into_lossy()),
-                    Some(u6::new(2))
-                );
+                assert_eq!(u6::new(8).checked_rem(3.into_lossy()), Some(u6::new(2)));
                 assert_eq!(u6::new(10).checked_rem(0.into_lossy()), None)
             }
         }
@@ -613,10 +445,7 @@ mod test {
 
             #[test]
             fn saturating_add() {
-                assert_eq!(
-                    u6::new(10).saturating_add(5.into_lossy()),
-                    u6::new(15)
-                );
+                assert_eq!(u6::new(10).saturating_add(5.into_lossy()), u6::new(15));
                 assert_eq!(
                     u6::max_value().saturating_add(5.into_lossy()),
                     u6::max_value()
@@ -625,10 +454,7 @@ mod test {
 
             #[test]
             fn saturating_sub() {
-                assert_eq!(
-                    u6::new(10).saturating_sub(5.into_lossy()),
-                    u6::new(5)
-                );
+                assert_eq!(u6::new(10).saturating_sub(5.into_lossy()), u6::new(5));
                 assert_eq!(
                     u6::min_value().saturating_sub(5.into_lossy()),
                     u6::min_value()
@@ -637,14 +463,8 @@ mod test {
 
             #[test]
             fn saturating_mul() {
-                assert_eq!(
-                    u6::new(10).saturating_mul(5.into_lossy()),
-                    u6::new(50)
-                );
-                assert_eq!(
-                    u6::new(10).saturating_mul(10.into_lossy()),
-                    u6::max_value()
-                )
+                assert_eq!(u6::new(10).saturating_mul(5.into_lossy()), u6::new(50));
+                assert_eq!(u6::new(10).saturating_mul(10.into_lossy()), u6::max_value())
             }
 
             #[test]
@@ -659,10 +479,7 @@ mod test {
 
             #[test]
             fn wrapping_add() {
-                assert_eq!(
-                    u6::new(5).wrapping_add(2.into_lossy()),
-                    u6::new(7)
-                );
+                assert_eq!(u6::new(5).wrapping_add(2.into_lossy()), u6::new(7));
                 assert_eq!(
                     u6::new(u6::MAX).wrapping_add(2.into_lossy()),
                     u6::new(u6::MIN + 1)
@@ -671,10 +488,7 @@ mod test {
 
             #[test]
             fn wrapping_sub() {
-                assert_eq!(
-                    u6::new(5).wrapping_sub(2.into_lossy()),
-                    u6::new(3)
-                );
+                assert_eq!(u6::new(5).wrapping_sub(2.into_lossy()), u6::new(3));
                 assert_eq!(
                     u6::new(u6::MIN).wrapping_sub(1.into_lossy()),
                     u6::new(u6::MAX)
@@ -683,14 +497,8 @@ mod test {
                     u6::new(u6::MIN).wrapping_sub(20.into_lossy()),
                     u6::new(u6::MAX - 19)
                 );
-                assert_eq!(
-                    u6::new(32).wrapping_sub(32.into_lossy()),
-                    u6::new(0)
-                );
-                assert_eq!(
-                    u6::new(32).wrapping_sub(33.into_lossy()),
-                    u6::new(u6::MAX)
-                );
+                assert_eq!(u6::new(32).wrapping_sub(32.into_lossy()), u6::new(0));
+                assert_eq!(u6::new(32).wrapping_sub(33.into_lossy()), u6::new(u6::MAX));
                 assert_eq!(
                     u6::new(0).wrapping_sub(10.into_lossy()),
                     u6::new(u6::MAX - 9)
@@ -699,34 +507,16 @@ mod test {
 
             #[test]
             fn wrapping_mul() {
-                assert_eq!(
-                    u6::new(5).wrapping_mul(2.into_lossy()),
-                    u6::new(10)
-                );
-                assert_eq!(
-                    u6::new(32).wrapping_mul(2.into_lossy()),
-                    u6::new(0)
-                );
-                assert_eq!(
-                    u6::new(10).wrapping_mul(10.into_lossy()),
-                    u6::new(36)
-                );
+                assert_eq!(u6::new(5).wrapping_mul(2.into_lossy()), u6::new(10));
+                assert_eq!(u6::new(32).wrapping_mul(2.into_lossy()), u6::new(0));
+                assert_eq!(u6::new(10).wrapping_mul(10.into_lossy()), u6::new(36));
             }
 
             #[test]
             fn wrapping_div() {
-                assert_eq!(
-                    u6::new(6).wrapping_div(2.into_lossy()),
-                    u6::new(3)
-                );
-                assert_eq!(
-                    u6::new(10).wrapping_div(3.into_lossy()),
-                    u6::new(3)
-                );
-                assert_eq!(
-                    u6::new(0).wrapping_div(3.into_lossy()),
-                    u6::new(0)
-                );
+                assert_eq!(u6::new(6).wrapping_div(2.into_lossy()), u6::new(3));
+                assert_eq!(u6::new(10).wrapping_div(3.into_lossy()), u6::new(3));
+                assert_eq!(u6::new(0).wrapping_div(3.into_lossy()), u6::new(0));
             }
 
             #[test]
@@ -886,10 +676,7 @@ mod test {
 
             #[test]
             fn saturating_add() {
-                assert_eq!(
-                    i6::new(10).saturating_add(5.into_lossy()),
-                    i6::new(15)
-                );
+                assert_eq!(i6::new(10).saturating_add(5.into_lossy()), i6::new(15));
                 assert_eq!(
                     i6::max_value().saturating_add(5.into_lossy()),
                     i6::max_value()
@@ -898,10 +685,7 @@ mod test {
 
             #[test]
             fn saturating_sub() {
-                assert_eq!(
-                    i6::new(10).saturating_sub(5.into_lossy()),
-                    i6::new(5)
-                );
+                assert_eq!(i6::new(10).saturating_sub(5.into_lossy()), i6::new(5));
                 assert_eq!(
                     i6::min_value().saturating_sub(5.into_lossy()),
                     i6::min_value()
@@ -910,14 +694,8 @@ mod test {
 
             #[test]
             fn saturating_mul() {
-                assert_eq!(
-                    i6::new(10).saturating_mul(2.into_lossy()),
-                    i6::new(20)
-                );
-                assert_eq!(
-                    i6::new(10).saturating_mul(10.into_lossy()),
-                    i6::max_value()
-                )
+                assert_eq!(i6::new(10).saturating_mul(2.into_lossy()), i6::new(20));
+                assert_eq!(i6::new(10).saturating_mul(10.into_lossy()), i6::max_value())
             }
 
             #[test]

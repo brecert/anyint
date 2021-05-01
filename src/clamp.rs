@@ -16,6 +16,7 @@ pub trait Clamp<T> {
 }
 
 impl<T: PartialOrd + Copy> const Clamp<T> for Range<T> {
+  #[inline]
   fn clamp(&self, val: T) -> Self::Output {
     clamp(self, val)
   }
@@ -24,6 +25,7 @@ impl<T: PartialOrd + Copy> const Clamp<T> for Range<T> {
 /// Provides wrapping or overflowing functionality to a value.
 pub trait Wrap<T>: Sized {
   type Output = T;
+
   #[inline]
   fn wrap(self) -> Self::Output {
     self.wrapped().0
