@@ -1,11 +1,12 @@
-pub const fn clamp<T: PartialOrd + Copy>(range: &std::ops::Range<T>, val: T) -> T {
-  if val < range.start {
+/// Clamps a value between a range's beginning and end
+pub const fn clamp<T: PartialOrd + Copy>(range: &std::ops::Range<T>, value: T) -> T {
+  if value < range.start {
     return range.start;
   }
-  if val > range.end {
+  if value > range.end {
     return range.end;
   }
-  return val;
+  value
 }
 
 // pub trait Clamp<T> {
@@ -25,6 +26,7 @@ pub trait Wrap<T>: Sized {
   type Output = T;
 
   #[inline]
+  /// Wraps the value, wrapping around if out of bounds.
   fn wrap(self) -> Self::Output {
     self.wrapped().0
   }
