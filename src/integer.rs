@@ -139,10 +139,28 @@ pub macro impl_common($ty:ty, $signed:literal) {
             wrapping_mul => overflowing_mul,
             wrapping_div => overflowing_div,
         );
+    
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(1).wrapping_shl(4), N6::new(16));
+        /// assert_eq!(N6::new(1).wrapping_shl(128), N6::new(1));
+        /// ```
+        fn wrapping_shl(self, rhs: u32) -> Self {
+            Self(self.as_ref().wrapping_shl(rhs & (Self::BITS - 1)))
+        }
 
-        // fn wrapping_add(self, rhs: Self) -> Self {
-        //     self.overflowing_add(rhs).0
-        // }
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(16).wrapping_shr(4), N6::new(1));
+        /// assert_eq!(N6::new(16).wrapping_shr(128), N6::new(16));
+        /// ```
+        fn wrapping_shr(self, rhs: u32) -> Self {
+            Self(self.as_ref().wrapping_shr(rhs & (Self::BITS - 1)))
+        }
 
         /// ```
         /// use anyint::*;

@@ -109,8 +109,17 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const 
     fn wrapping_div(self, rhs: Self) -> Self;
 
     // fn wrapping_rem(self, rhs: Self) -> Self;
-    // fn wrapping_shl(self, rhs: Self) -> Self;
-    // fn wrapping_shr(self, rhs: Self) -> Self;
+
+    /// Panic-free bitwise shift-left; yields `self << mask(rhs)`,
+    /// where `mask` removes any high-order bits of `rhs` that
+    /// would cause the shift to exceed the bitwidth of the type.
+    fn wrapping_shl(self, rhs: u32) -> Self;
+
+    /// Panic-free bitwise shift-right; yields `self >> mask(rhs)`,
+    /// where `mask` removes any high-order bits of `rhs` that
+    /// would cause the shift to exceed the bitwidth of the type.
+    fn wrapping_shr(self, rhs: u32) -> Self;
+
     // fn wrapping_pow(self, exp: u32) -> Self;
 
     /// Calculates `self` + `rhs`
