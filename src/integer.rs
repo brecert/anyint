@@ -127,6 +127,30 @@ pub macro impl_common($ty:ty, $signed:literal) {
             checked_rem,
         );
 
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(1).checked_shl(4), Some(N6::new(16)));
+        /// assert_eq!(N6::new(1).checked_shl(128), None);
+        /// ```
+        fn checked_shl(self, rhs: u32) -> Option<Self> {
+            let (a, b) = self.overflowing_shl(rhs);
+            if b {None} else {Some(a)}
+        }
+
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(16).checked_shr(4), Some(N6::new(1)));
+        /// assert_eq!(N6::new(16).checked_shr(128), None);
+        /// ```
+        fn checked_shr(self, rhs: u32) -> Option<Self> {
+            let (a, b) = self.overflowing_shr(rhs);
+            if b {None} else {Some(a)}
+        }
+
         fn_saturating!(saturating_add, saturating_sub, saturating_mul,);
 
         fn saturating_pow(self, rhs: u32) -> Self {
@@ -139,7 +163,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
             wrapping_mul => overflowing_mul,
             wrapping_div => overflowing_div,
         );
-    
+
         /// ```
         /// use anyint::*;
         /// use anyint::convert::*;
@@ -199,7 +223,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn overflowing_div(self, rhs: Self) -> (Self, bool) {
             Self(*self.as_ref() / *rhs.as_ref()).wrapped()
         }
-    
+
         /// ```
         /// use anyint::*;
         /// use anyint::convert::*;

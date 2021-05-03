@@ -68,8 +68,14 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const 
     /// if `rhs == 0`.
     fn checked_rem(self, rhs: Self) -> Option<Self>;
 
-    // fn checked_shl(self, rhs: Self) -> Option<Self>;
-    // fn checked_shr(self, rhs: Self) -> Option<Self>;
+    /// Checked shift left. Computes `self << rhs`, returning `None`
+    /// if `rhs` is larger than or equal to the number of bits in `self`.
+    fn checked_shl(self, rhs: u32) -> Option<Self>;
+
+    /// Checked shift right. Computes `self >> rhs`, returning `None`
+    /// if `rhs` is larger than or equal to the number of bits in `self`.
+    fn checked_shr(self, rhs: u32) -> Option<Self>;
+
     // fn checked_pow(self, rhs: u32) -> Self;
 
     /// Saturating integer addition. Computes `self + rhs`, saturating at the numeric bounds instead of overflowing.
