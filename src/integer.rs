@@ -199,6 +199,28 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn overflowing_div(self, rhs: Self) -> (Self, bool) {
             Self(*self.as_ref() / *rhs.as_ref()).wrapped()
         }
+    
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(1).overflowing_shl(4), (N6::new(16), false));
+        /// assert_eq!(N6::new(1).overflowing_shl(128), (N6::new(1), true));
+        /// ```
+        fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
+            (self.wrapping_shl(rhs), (rhs > (Self::BITS - 1)))
+        }
+
+        /// ```
+        /// use anyint::*;
+        /// use anyint::convert::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(16).overflowing_shr(4), (N6::new(1), false));
+        /// assert_eq!(N6::new(16).overflowing_shr(128), (N6::new(16), true));
+        /// ```
+        fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
+            (self.wrapping_shr(rhs), (rhs > (Self::BITS - 1)))
+        }
     }
 
     impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>

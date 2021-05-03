@@ -151,8 +151,25 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const 
     fn overflowing_div(self, rhs: Self) -> (Self, bool);
 
     // fn overflowing_rem(self, rhs: Self) -> Self;
-    // fn overflowing_shl(self, rhs: Self) -> Self;
-    // fn overflowing_shr(self, rhs: Self) -> Self;
+
+    /// Shifts self left by `rhs` bits.
+    ///
+    /// Returns a tuple of the shifted version of self along with a boolean
+    /// indicating whether the shift value was larger than or equal to the
+    /// number of bits. If the shift value is too large, then value is
+    /// masked `(BITS - 1)` where N is the number of bits, and this value is then
+    /// used to perform the shift.
+    fn overflowing_shl(self, rhs: u32) -> (Self, bool);
+
+    /// Shifts self right by `rhs` bits.
+    ///
+    /// Returns a tuple of the shifted version of self along with a boolean
+    /// indicating whether the shift value was larger than or equal to the
+    /// number of bits. If the shift value is too large, then value is
+    /// masked `(BITS - 1)`, and this value is then
+    /// used to perform the shift.
+    fn overflowing_shr(self, rhs: u32) -> (Self, bool);
+
     // fn overflowing_pow(self, exp: u32) -> Self;
 }
 
