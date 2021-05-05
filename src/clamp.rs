@@ -23,6 +23,7 @@ pub const fn clamp<T: PartialOrd + Copy>(range: &std::ops::Range<T>, value: T) -
 
 /// Provides wrapping or overflowing functionality to a value.
 pub trait Wrap<T>: Sized {
+  /// The resulting type after wrapping.
   type Output = T;
 
   #[inline]
@@ -31,5 +32,6 @@ pub trait Wrap<T>: Sized {
     self.wrapped().0
   }
 
+  /// Returns a tuple of the wrapped result, along with a boolean indicating whether the result was wrapped.
   fn wrapped(self) -> (Self::Output, bool);
 }

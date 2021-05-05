@@ -1,4 +1,5 @@
 #![allow(incomplete_features)]
+#![deny(missing_docs)]
 #![feature(
     decl_macro,
     const_fn,
@@ -9,6 +10,8 @@
     int_bits_const,
     extended_key_value_attributes
 )]
+
+//! Anyint provides traits and structs for working with integers of any bit size
 
 /// Restrict and contrain values.
 pub mod clamp;
