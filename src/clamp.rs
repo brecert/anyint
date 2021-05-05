@@ -1,12 +1,13 @@
 /// Clamps a value between a range's beginning and end
-pub const fn clamp<T: PartialOrd + Copy>(range: &std::ops::Range<T>, value: T) -> T {
-  if value < range.start {
-    return range.start;
+#[inline]
+pub const fn clamp<T: PartialOrd + Copy>(input: T, min: T, max: T) -> T {
+  if input < min {
+    min
+  } else if input > max {
+    max
+  } else {
+    input
   }
-  if value > range.end {
-    return range.end;
-  }
-  value
 }
 
 // pub trait Clamp<T> {
