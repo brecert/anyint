@@ -1,5 +1,4 @@
-use crate::clamp::Clamp;
-use crate::convert::{LossyFrom, UncheckedFrom};
+use crate::convert::UncheckedFrom;
 
 // todo: const trait implementations
 // todo: maybe default implementations should not require `Self` traits
@@ -7,7 +6,7 @@ use crate::convert::{LossyFrom, UncheckedFrom};
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
-    Self: Clamp<Self> + LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
+    Self: UncheckedFrom<T>,
 {
     // TODO: find a better name for this.
     /// The underlying representation of the integer.
