@@ -56,7 +56,6 @@ impl_op!(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::LossyFrom;
 
     #[allow(non_camel_case_types)]
     type u6 = int<u8, 6>;

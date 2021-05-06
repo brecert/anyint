@@ -3,7 +3,7 @@ use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
 use crate::non_standard_integer::{
     NonStandardInteger, NonStandardIntegerCommon, NonStandardIntegerSigned,
 };
-use std::convert::{From, TryFrom, TryInto};
+use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
 use std::num::IntErrorKind;
 use std::str::FromStr;
