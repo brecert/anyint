@@ -27,6 +27,10 @@ pub mod integer;
 
 /// Traits for implementing a non standard integer.
 pub mod non_standard_integer;
+
+/// Error types relating to integers.
+pub mod error;
+
 mod ops;
 
 // todo: no std
