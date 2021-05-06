@@ -10,7 +10,8 @@
     int_bits_const,
     extended_key_value_attributes,
     int_error_matching,
-    result_flattening
+    result_flattening,
+    const_trait_bound_opt_out
 )]
 
 //! Anyint provides traits and structs for working with integers of any bit size

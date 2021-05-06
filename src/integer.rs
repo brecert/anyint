@@ -1,4 +1,4 @@
-use crate::clamp::Wrap;
+use crate::clamp::{clamped, Clamp, Wrap};
 use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
 use crate::non_standard_integer::{
     NonStandardInteger, NonStandardIntegerCommon, NonStandardIntegerSigned,
@@ -60,7 +60,7 @@ impl From<IntErrorKind> for ParseIntError {
 #[inline(always)]
 #[doc(hidden)]
 pub const fn from_lossy<
-    I: NonStandardInteger<T, BITS, SIGNED> + UncheckedFrom<T>,
+    I: NonStandardInteger<T, BITS, SIGNED> + UncheckedFrom<T> + Clamp<I>,
     T: PartialOrd + Copy,
     const BITS: u32,
     const SIGNED: bool,
@@ -116,6 +116,13 @@ where
     }
 }
 
+/// Convert a `T` into the target without bounds checking
+unsafe impl<T, const BITS: u32> const UncheckedFrom<T> for int<T, BITS> {
+    unsafe fn from_unchecked(n: T) -> Self {
+        Self(n)
+    }
+}
+
 #[doc(hidden)]
 pub macro fn_checked($($name:ident,)*) {
     $(
@@ -148,14 +155,6 @@ pub macro fn_wrapping($($fn_name:ident => $wrap_name:ident,)*) {
 
 #[doc(hidden)]
 pub macro impl_common($ty:ty, $signed:literal) {
-    impl<const BITS: u32> const WrappingFrom<$ty> for int<$ty, BITS> {
-        /// Convert a `T` into the target. Only the `BITS` amount are kept.
-        fn from_wrapping(val: $ty) -> Self {
-            // SAFETY: `from_unchecked` is wrapped, making it a valid value
-            unsafe { Self::from_unchecked(val).wrap() }
-        }
-    }
-
     impl<const BITS: u32> const LossyFrom<$ty> for int<$ty, BITS> {
         /// Convert a `T` into the target. Only the `BITS` amount are kept.
         fn from_lossy(val: $ty) -> Self {
@@ -163,10 +162,19 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
     }
 
-    /// Convert a `T` into the target without bounds checking
-    unsafe impl<const BITS: u32> const UncheckedFrom<$ty> for int<$ty, BITS> {
-        unsafe fn from_unchecked(n: $ty) -> Self {
-            Self(n)
+    impl<const BITS: u32> WrappingFrom<$ty> for int<$ty, BITS> {
+        fn from_wrapping(n: $ty) -> Self {
+            Self(n).wrap()
+        }
+    }
+
+    impl<const BITS: u32> const Clamp<Self> for int<$ty, BITS> {
+        // todo: find better name
+        /// Limits the inner value to be between `MIN` and `MAX`
+        fn clamped(self) -> (Self, bool) {
+            let (val, clamped) = clamped(*self.as_ref(), Self::MIN, Self::MAX);
+            // SAFETY: the value has already been clamped to be in the valid range of `int`
+            unsafe { (Self::from_unchecked(val), clamped) }
         }
     }
 
@@ -459,6 +467,8 @@ mod test {
     fn from_wrapping() {
         let x: int<u8, 6> = int::from_wrapping(65);
         assert_eq!(x.as_ref(), &1);
+        let y: int<i8, 6> = int::from_wrapping(33);
+        assert_eq!(y.as_ref(), &-31);
     }
 
     mod unsigned_common {

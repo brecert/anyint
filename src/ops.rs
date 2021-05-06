@@ -37,7 +37,7 @@ impl_op!(
 impl_op!(
     Div,
     div(Self),
-    overflowing_mul,
+    overflowing_div,
     "attempt to divide with overflow"
 );
 impl_op!(

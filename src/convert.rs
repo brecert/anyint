@@ -1,5 +1,3 @@
-use std::convert::From;
-
 /// Converts `Self` into `T`, possibly wrapping around in the process.
 pub trait WrappingInto<T>: Sized {
     /// Performs the conversion, possibly wrapping around in the process.
@@ -39,15 +37,6 @@ where
 {
     fn into_lossy(self) -> U {
         U::from_lossy(self)
-    }
-}
-
-impl<T, U> LossyFrom<U> for T
-where
-    T: From<U>,
-{
-    fn from_lossy(other: U) -> Self {
-        Self::from(other)
     }
 }
 

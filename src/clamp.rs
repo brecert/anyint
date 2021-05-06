@@ -1,38 +1,35 @@
 /// Clamps a value between a range's beginning and end
 #[inline]
-pub const fn clamp<T: PartialOrd + Copy>(input: T, min: T, max: T) -> T {
+pub const fn clamped<T: PartialOrd + Copy>(input: T, min: T, max: T) -> (T, bool) {
     if input < min {
-        min
+        (min, true)
     } else if input > max {
-        max
+        (max, true)
     } else {
-        input
+        (input, false)
     }
 }
 
-// pub trait Clamp<T> {
-//   type Output = T;
-//   fn clamp(&self, lhs: T) -> Self::Output;
-// }
-
-// impl<T: PartialOrd + Copy> const Clamp<T> for Range<T> {
-//   #[inline]
-//   fn clamp(&self, val: T) -> Self::Output {
-//     clamp(self, val)
-//   }
-// }
-
 /// Provides wrapping or overflowing functionality to a value.
 pub trait Wrap<T>: Sized {
-    /// The resulting type after wrapping.
-    type Output = T;
-
     #[inline]
     /// Wraps the value, wrapping around if out of bounds.
-    fn wrap(self) -> Self::Output {
+    fn wrap(self) -> T {
         self.wrapped().0
     }
 
     /// Returns a tuple of the wrapped result, along with a boolean indicating whether the result was wrapped.
-    fn wrapped(self) -> (Self::Output, bool);
+    fn wrapped(self) -> (T, bool);
+}
+
+/// Provides clamping functionality to a value.
+pub trait Clamp<T>: Sized {
+    #[inline]
+    /// Clamps the value, clamping at the bounds if the result is out of bounds.
+    fn clamp(self) -> T {
+        self.clamped().0
+    }
+
+    /// Returns a tuple of the clamped result, along with a boolean indicating whether the result was clamped.
+    fn clamped(self) -> (T, bool);
 }

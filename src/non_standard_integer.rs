@@ -1,4 +1,4 @@
-use crate::clamp::clamp;
+use crate::clamp::Clamp;
 use crate::convert::{LossyFrom, UncheckedFrom};
 
 // todo: const trait implementations
@@ -7,7 +7,7 @@ use crate::convert::{LossyFrom, UncheckedFrom};
 pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
 where
     T: PartialOrd + Copy,
-    Self: LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
+    Self: Clamp<Self> + LossyFrom<T> + UncheckedFrom<T> + AsRef<T>,
 {
     // TODO: find a better name for this.
     /// The underlying representation of the integer.
@@ -25,13 +25,6 @@ where
     /// The largest value that can be represented by this integer type.
     const MAX: T;
 
-    // todo: find better name
-    /// Limits the inner value to be between `MIN` and `MAX`
-    fn clamp(self) -> Self {
-        let clamped = clamp(*self.as_ref(), Self::MIN, Self::MAX);
-        // SAFETY: the value has already been clamped to be in the valid range of `int`
-        unsafe { Self::from_unchecked(clamped) }
-    }
     /// Returns the smallest value that can be represented by this integer type.
     fn min_value() -> Self {
         // SAFETY: The user ensures that `MIN` is valid
