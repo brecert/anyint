@@ -1,17 +1,17 @@
 - [x] Better type support so that `let x: int<i32, 2> = int::from_lossy(5);` works
-  If `from_lossy` and similar is to remain const, other features may need to be implemented first like const fn in traits
+      If `from_lossy` and similar is to remain const, other features may need to be implemented first like const fn in traits
 - [ ] A macro for writing int, so that `let x = n!(16u7);` is possible
 - [~] More methods
 - [ ] A more generic implementation once rust has better type support for that
-- [ ] FromStr and other implementations
+- [~] FromStr and other implementations
 - [ ] A Wrapped implementation
 - [x] const fn in traits once rust supports that
 - [ ] feature flags
 - [ ] bigints or similar
 - [ ] better docs and doctests
 - [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
-- [ ] very heavy cleanup
+- [~] very heavy cleanup
   - [ ] test normalization and cleanup
-  - [ ] split up lib.rs
+  - [~] split up lib.rs
 - [ ] add benchmarks
 - [ ] code coverage
