@@ -3,14 +3,59 @@ use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
 use crate::non_standard_integer::{
     NonStandardInteger, NonStandardIntegerCommon, NonStandardIntegerSigned,
 };
-use std::convert::{From, TryFrom};
+use std::convert::{From, TryFrom, TryInto};
 use std::fmt::{self, Display};
+use std::num::IntErrorKind;
+use std::str::FromStr;
 use thiserror::Error;
 
 /// The error type returned when a checked `int` conversion fails.
 #[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[error("out of range type conversion attempted")]
-pub struct OutOfRangeIntError;
+pub enum OutOfRangeIntError {
+    /// Integer is too large to store in target integer type.
+    PosOverflow,
+    /// Integer is too small to store in target integer type.
+    NegOverflow,
+}
+
+impl From<OutOfRangeIntError> for ParseIntError {
+    fn from(err: OutOfRangeIntError) -> Self {
+        ParseIntError::OutOfRange(err)
+    }
+}
+
+/// Enum to store the various types of errors that can cause parsing an integer to fail.
+#[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
+pub enum ParseIntError {
+    /// Value being parsed is empty.
+    #[error("cannot parse integer from empty string")]
+    Empty,
+
+    /// Contains an invalid digit in its context.
+    #[error("invalid digit found in string")]
+    InvalidDigit,
+
+    /// Value was too large or small to store in the target type.
+    #[error("{0}")]
+    OutOfRange(OutOfRangeIntError),
+
+    #[error("Unknown parsing error.")]
+    /// An unknown error, this should never happen.
+    Unknown,
+}
+
+impl From<IntErrorKind> for ParseIntError {
+    fn from(kind: IntErrorKind) -> Self {
+        match kind {
+            IntErrorKind::Empty => ParseIntError::Empty,
+            IntErrorKind::InvalidDigit => ParseIntError::InvalidDigit,
+            IntErrorKind::NegOverflow => ParseIntError::OutOfRange(OutOfRangeIntError::NegOverflow),
+            IntErrorKind::PosOverflow => ParseIntError::OutOfRange(OutOfRangeIntError::PosOverflow),
+            _ => ParseIntError::Unknown,
+        }
+    }
+}
 
 #[inline(always)]
 #[doc(hidden)]
@@ -53,6 +98,21 @@ where
     /// Convenience wrapper around `from_lossy`.
     pub fn new(n: T) -> Self {
         Self::from_lossy(n)
+    }
+}
+
+impl<T, const BITS: u32> FromStr for int<T, BITS>
+where
+    T: FromStr<Err = std::num::ParseIntError>,
+    Self: TryFrom<T, Error = OutOfRangeIntError>,
+{
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        T::from_str(s)
+            .map(|v| Self::try_from(v).map_err(|e| e.into()))
+            .map_err(|err| err.kind().clone().into())
+            .flatten()
     }
 }
 
@@ -252,10 +312,15 @@ pub macro impl_common($ty:ty, $signed:literal) {
         Self: NonStandardInteger<$ty, BITS, $signed>,
     {
         type Error = OutOfRangeIntError;
+        // todo: test for negatives
         fn try_from(data: $ty) -> Result<Self, Self::Error> {
             if data > Self::MAX {
-                Err(OutOfRangeIntError)
-            } else {
+                Err(OutOfRangeIntError::PosOverflow)
+            }
+            else if data < Self::MIN {
+                Err(OutOfRangeIntError::NegOverflow)
+            }
+            else {
                 Ok(Self(data))
             }
         }
@@ -378,6 +443,12 @@ mod test {
     use crate::convert::LossyInto;
     use std::convert::TryInto;
 
+    #[allow(non_camel_case_types)]
+    type u6 = int<u8, 6>;
+
+    #[allow(non_camel_case_types)]
+    type i6 = int<i8, 6>;
+
     #[test]
     fn type_inference() {
         let _: int<u8, 6> = int::from_lossy(5);
@@ -392,8 +463,6 @@ mod test {
 
     mod unsigned_common {
         use super::*;
-        #[allow(non_camel_case_types)]
-        type u6 = int<u8, 6>;
 
         #[test]
         fn max() {
@@ -448,7 +517,7 @@ mod test {
             let value: Result<u6, OutOfRangeIntError> = 15.try_into();
             assert_eq!(value, Ok(int::<u8, 6>(15)));
             let value: Result<u6, OutOfRangeIntError> = 64.try_into();
-            assert_eq!(value, Err(OutOfRangeIntError))
+            assert_eq!(value, Err(OutOfRangeIntError::PosOverflow))
         }
 
         mod checked {
@@ -651,13 +720,26 @@ mod test {
             fn overflowing_div_with_zero() {
                 u6::new(3).overflowing_div(0.into_lossy());
             }
+
+            mod traits {
+                use super::*;
+
+                #[test]
+                fn from_str() {
+                    assert_eq!(u6::from_str(""), Err(ParseIntError::Empty));
+                    assert_eq!(u6::from_str("10"), Ok(u6::new(10)));
+                    assert_eq!(u6::from_str("-10"), Err(ParseIntError::InvalidDigit));
+                    assert_eq!(
+                        u6::from_str("64"),
+                        Err(ParseIntError::OutOfRange(OutOfRangeIntError::PosOverflow))
+                    );
+                }
+            }
         }
     }
 
     mod signed {
         use super::*;
-        #[allow(non_camel_case_types)]
-        type i6 = int<i8, 6>;
 
         #[test]
         fn max() {
@@ -713,7 +795,10 @@ mod test {
             let value: Result<i6, OutOfRangeIntError> = 15.try_into();
             assert_eq!(value, Ok(int::<i8, 6>(15)));
             let value: Result<i6, OutOfRangeIntError> = 32.try_into();
-            assert_eq!(value, Err(OutOfRangeIntError))
+            assert_eq!(value, Err(OutOfRangeIntError::PosOverflow));
+
+            let value: Result<i6, OutOfRangeIntError> = (-33).try_into();
+            assert_eq!(value, Err(OutOfRangeIntError::NegOverflow))
         }
 
         mod saturating {
@@ -845,6 +930,25 @@ mod test {
             #[should_panic]
             fn overflowing_div_with_zero() {
                 i6::new(3).overflowing_div(0.into_lossy());
+            }
+        }
+
+        mod traits {
+            use super::*;
+
+            #[test]
+            fn from_str() {
+                assert_eq!(i6::from_str("10"), Ok(i6::new(10)));
+                assert_eq!(i6::from_str("-10"), Ok(i6::new(-10)));
+                assert_eq!(
+                    i6::from_str("-33"),
+                    Err(ParseIntError::OutOfRange(OutOfRangeIntError::NegOverflow))
+                );
+                assert_eq!(
+                    i6::from_str("32"),
+                    Err(ParseIntError::OutOfRange(OutOfRangeIntError::PosOverflow))
+                );
+                assert_eq!(i6::from_str(""), Err(ParseIntError::Empty));
             }
         }
     }
