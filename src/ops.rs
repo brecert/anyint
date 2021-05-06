@@ -1,4 +1,6 @@
-use crate::{int, NonStandardIntegerCommon};
+use crate::integer::int;
+use crate::non_standard_integer::NonStandardIntegerCommon;
+
 use std::ops::{Add, Div, Mul, Shl, Shr, Sub};
 
 #[doc(hidden)]

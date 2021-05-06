@@ -26,7 +26,7 @@ pub const fn from_lossy<
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct int<T, const BITS: u32>(T);
+pub struct int<T, const BITS: u32>(#[doc(hidden)] pub T);
 
 impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     #[inline]
@@ -49,6 +49,11 @@ where
     /// Convenience wrapper around `from_lossy`.
     pub fn new(n: T) -> Self {
         Self::from_lossy(n)
+    }
+
+    /// Gets the inner value
+    pub fn val(self) -> T {
+        self.0
     }
 }
 
@@ -130,8 +135,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
     }
 
     /// ```
-    /// use anyint::*;
-    /// use anyint::convert::*;
+    /// use anyint::prelude::*;
     #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
     /// assert_eq!(x.as_ref(), &10);
     /// ```
@@ -147,8 +151,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         );
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(1).checked_shl(4), Some(N6::new(16)));
         /// assert_eq!(N6::new(1).checked_shl(128), None);
@@ -159,8 +162,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(16).checked_shr(4), Some(N6::new(1)));
         /// assert_eq!(N6::new(16).checked_shr(128), None);
@@ -184,8 +186,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         );
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(1).wrapping_shl(4), N6::new(16));
         /// assert_eq!(N6::new(1).wrapping_shl(128), N6::new(1));
@@ -195,8 +196,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(16).wrapping_shr(4), N6::new(1));
         /// assert_eq!(N6::new(16).wrapping_shr(128), N6::new(16));
@@ -206,8 +206,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::max_value().overflowing_add(N6::from_lossy(1)), (N6::min_value(), true));
         /// assert_eq!(N6::min_value().overflowing_add(N6::from_lossy(1)), (N6::from_lossy(N6::MIN + 1), false));
@@ -217,8 +216,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
         /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
@@ -244,8 +242,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(1).overflowing_shl(4), (N6::new(16), false));
         /// assert_eq!(N6::new(1).overflowing_shl(128), (N6::new(1), true));
@@ -255,8 +252,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
 
         /// ```
-        /// use anyint::*;
-        /// use anyint::convert::*;
+        /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
         /// assert_eq!(N6::new(16).overflowing_shr(4), (N6::new(1), false));
         /// assert_eq!(N6::new(16).overflowing_shr(128), (N6::new(16), true));
@@ -377,19 +373,19 @@ mod doctest {
     use super::*;
 
     /// ```compile_fail
-    /// use anyint::*;
+    /// use anyint::prelude::*;
     /// let x = anyint::int::<i8, 8>::MAX;
     /// ```
     pub struct SIntOnlyTakesValidSize;
 
     /// ```compile_fail
-    /// use anyint::*;
+    /// use anyint::prelude::*;
     /// let x = anyint::int::<u8, 8>::MAX;
     /// ```
     pub struct UIntOnlyTakesValidSize;
 
     /// ```
-    /// use anyint::*;
+    /// use anyint::prelude::*;
     /// let x = int::<u8, 7>::MAX;
     /// let x = int::<i8, 7>::MAX;
     /// ```

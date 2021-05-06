@@ -33,8 +33,21 @@ pub mod error;
 
 mod ops;
 
-// todo: no std
-// todo: unstable feature flags
-pub use crate::convert::*;
-pub use crate::integer::*;
-pub use crate::non_standard_integer::*;
+/// The purpose of this module is to alleviate imports of many common `int` traits.
+/// 
+/// ```
+/// use anyint::prelude::*;
+/// 
+/// let x: int<u8, 6> = int::new(20);
+/// assert_eq!(x.val(), 20);
+/// 
+/// let y: int<i8, 6> = int::from_wrapping(34);
+/// assert_eq!(y.val(), -30);
+/// ```
+pub mod prelude {
+    // todo: no std
+    // todo: unstable feature flags
+    pub use super::convert::*;
+    pub use super::integer::int;
+    pub use super::non_standard_integer::*;
+}
