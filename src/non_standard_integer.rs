@@ -183,11 +183,11 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const 
 pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>:
     NonStandardInteger<T, BITS, true>
 {
-    /// Saturating absolute value. Computes `self.abs()`, returning `MAX` 
+    /// Saturating absolute value. Computes `self.abs()`, returning `MAX`
     /// if `self == MIN` instead of overflowing.
     fn saturating_abs(self) -> Self;
 
-    /// Saturating integer negation. Computes `-self`, returning `MAX` 
+    /// Saturating integer negation. Computes `-self`, returning `MAX`
     /// if `self == MIN` instead of overflowing.
     fn saturating_neg(self) -> Self;
 }

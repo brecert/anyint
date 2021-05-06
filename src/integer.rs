@@ -232,7 +232,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         /// assert_eq!(N6::new(1).wrapping_shl(128), N6::new(1));
         /// ```
         fn wrapping_shl(self, rhs: u32) -> Self {
-            Self(self.as_ref().wrapping_shl(rhs & (Self::BITS - 1)))
+            Self(self.as_ref().wrapping_shl(rhs) & Self::MAX)
         }
 
         /// ```
@@ -243,7 +243,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
         /// assert_eq!(N6::new(16).wrapping_shr(128), N6::new(16));
         /// ```
         fn wrapping_shr(self, rhs: u32) -> Self {
-            Self(self.as_ref().wrapping_shr(rhs & (Self::BITS - 1)))
+            Self(self.as_ref().wrapping_shr(rhs) & Self::MAX)
         }
 
         /// ```
