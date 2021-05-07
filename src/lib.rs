@@ -1,17 +1,15 @@
 #![allow(incomplete_features)]
-#![deny(missing_docs)]
+#![deny(missing_docs, unused_features)]
 #![feature(
     decl_macro,
     const_fn,
     const_trait_impl,
     const_refs_to_cell,
     associated_type_defaults,
-    specialization,
     int_bits_const,
     extended_key_value_attributes,
     int_error_matching,
-    result_flattening,
-    const_trait_bound_opt_out
+    result_flattening
 )]
 
 //! Anyint provides traits and structs for working with integers of any bit size
@@ -34,13 +32,13 @@ pub mod error;
 mod ops;
 
 /// The purpose of this module is to alleviate imports of many common `int` traits.
-/// 
+///
 /// ```
 /// use anyint::prelude::*;
-/// 
+///
 /// let x: int<u8, 6> = int::new(20);
 /// assert_eq!(x.val(), 20);
-/// 
+///
 /// let y: int<i8, 6> = int::from_wrapping(34);
 /// assert_eq!(y.val(), -30);
 /// ```
