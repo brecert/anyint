@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features)]
 #![deny(missing_docs, unused_features)]
 #![feature(

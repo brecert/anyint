@@ -7,6 +7,9 @@
 - [ ] A Wrapped implementation
 - [x] const fn in traits once rust supports that
 - [ ] feature flags
+  - [x] no_std support
+    - Need to look into if this can be improved
+    - should have better testing
 - [ ] bigints or similar
 - [ ] better docs and doctests
 - [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html

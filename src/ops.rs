@@ -1,7 +1,7 @@
 use crate::integer::int;
 use crate::non_standard_integer::NonStandardIntegerCommon;
 
-use std::ops::{Add, Div, Mul, Shl, Shr, Sub};
+use core::ops::{Add, Div, Mul, Shl, Shr, Sub};
 
 #[doc(hidden)]
 macro impl_op($trait_name: ident, $trait_fn_name: ident ($rhs_ty: ty), $overflow_name: ident, $overflow_message: literal) {

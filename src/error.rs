@@ -1,9 +1,13 @@
-use std::num::IntErrorKind;
-use thiserror::Error;
+use core::num::IntErrorKind;
+use displaydoc::Display;
 
 /// The error type returned when a checked `int` conversion fails.
-#[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-#[error("out of range type conversion attempted")]
+#[cfg_attr(
+    std,
+    error("out of range type conversion attempted"),
+    derive(thiserror::Error)
+)]
+#[derive(Display, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum OutOfRangeIntError {
     /// Integer is too large to store in target integer type.
     PosOverflow,
@@ -18,22 +22,19 @@ impl From<OutOfRangeIntError> for ParseIntError {
 }
 
 /// Enum to store the various types of errors that can cause parsing an integer to fail.
-#[derive(Error, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[cfg_attr(std, derive(thiserror::Error))]
+#[derive(Display, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum ParseIntError {
-    /// Value being parsed is empty.
-    #[error("cannot parse integer from empty string")]
+    /// cannot parse integer from empty string
     Empty,
 
-    /// Contains an invalid digit in its context.
-    #[error("invalid digit found in string")]
+    /// invalid digit found in string
     InvalidDigit,
 
-    /// Value was too large or small to store in the target type.
-    #[error("{0}")]
+    /// Value {0} was too large or small to store in the target type.
     OutOfRange(OutOfRangeIntError),
 
-    #[error("Unknown parsing error.")]
-    /// An unknown error, this should never happen.
+    /// Unknown parsing error, this should never happen.
     Unknown,
 }
 

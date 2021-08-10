@@ -4,9 +4,9 @@ use crate::error::{OutOfRangeIntError, ParseIntError};
 use crate::non_standard_integer::{
     NonStandardInteger, NonStandardIntegerCommon, NonStandardIntegerSigned,
 };
-use std::convert::{From, TryFrom};
-use std::fmt::{self, Display};
-use std::str::FromStr;
+use core::convert::{From, TryFrom};
+use core::fmt::{self, Display};
+use core::str::FromStr;
 
 /// An integer representation that can hold `BITS` amount of information for the given type `T`.
 #[repr(transparent)]
@@ -45,7 +45,7 @@ where
 
 impl<T, const BITS: u32> FromStr for int<T, BITS>
 where
-    T: FromStr<Err = std::num::ParseIntError>,
+    T: FromStr<Err = core::num::ParseIntError>,
     Self: TryFrom<T, Error = OutOfRangeIntError>,
 {
     type Err = ParseIntError;
@@ -388,7 +388,7 @@ mod doctest {
 mod test {
     use super::*;
     use crate::convert::LossyInto;
-    use std::convert::TryInto;
+    use core::convert::TryInto;
 
     #[allow(non_camel_case_types)]
     type u6 = int<u8, 6>;
