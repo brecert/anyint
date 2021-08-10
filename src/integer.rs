@@ -8,20 +8,6 @@ use std::convert::{From, TryFrom};
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
-#[inline(always)]
-#[doc(hidden)]
-pub const fn from_lossy<
-    I: NonStandardInteger<T, BITS, SIGNED> + UncheckedFrom<T> + Clamp<I>,
-    T: PartialOrd + Copy,
-    const BITS: u32,
-    const SIGNED: bool,
->(
-    n: T,
-) -> I {
-    // SAFETY: `from_unchecked` is clamped, making it a valid value
-    unsafe { I::from_unchecked(n).clamp() }
-}
-
 /// An integer representation that can hold `BITS` amount of information for the given type `T`.
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -114,7 +100,9 @@ pub macro impl_common($ty:ty, $signed:literal) {
     impl<const BITS: u32> const LossyFrom<$ty> for int<$ty, BITS> {
         /// Convert a `T` into the target. Only the `BITS` amount are kept.
         fn from_lossy(val: $ty) -> Self {
-            from_lossy(val)
+            unsafe {
+                Clamp::<Self>::clamp(<Self as UncheckedFrom<$ty>>::from_unchecked(val))
+            }
         }
     }
 
@@ -125,6 +113,10 @@ pub macro impl_common($ty:ty, $signed:literal) {
     }
 
     impl<const BITS: u32> const Clamp<Self> for int<$ty, BITS> {
+        fn clamp(self) -> Self {
+            self.clamped().0
+        }
+
         // todo: find better name
         /// Limits the inner value to be between `MIN` and `MAX`
         fn clamped(self) -> (Self, bool) {

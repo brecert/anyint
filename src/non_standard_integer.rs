@@ -182,4 +182,6 @@ pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>:
     /// Saturating integer negation. Computes `-self`, returning `MAX`
     /// if `self == MIN` instead of overflowing.
     fn saturating_neg(self) -> Self;
+
+    // todo: (overflowing | wrapping | checked)_(neg | abs)
 }

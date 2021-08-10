@@ -2,13 +2,10 @@
 #![deny(missing_docs, unused_features)]
 #![feature(
     decl_macro,
-    const_fn,
     const_trait_impl,
     const_refs_to_cell,
+    const_fn_trait_bound,
     associated_type_defaults,
-    int_bits_const,
-    extended_key_value_attributes,
-    int_error_matching,
     result_flattening
 )]
 
