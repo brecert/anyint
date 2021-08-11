@@ -8,6 +8,12 @@ use core::convert::{From, TryFrom};
 use core::fmt::{self, Display};
 use core::str::FromStr;
 
+/// Represents if an integer is considered to be signed
+pub trait SignedInt<const SIGNED: bool> {
+    /// If the integer is signed
+    const SIGNED: bool = SIGNED;
+}
+
 /// An integer representation that can hold `BITS` amount of information for the given type `T`.
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -126,12 +132,14 @@ pub macro impl_common($ty:ty, $signed:literal) {
         }
     }
 
+    impl<const BITS: u32> SignedInt<$signed> for int<$ty, BITS> {}
+
     /// ```
     /// use anyint::prelude::*;
     #[doc = concat!("let x = int::<", stringify!($ty), ", { ", stringify!(6), " }>::from_lossy(10);")]
     /// assert_eq!(x.as_ref(), &10);
     /// ```
-    impl<const BITS: u32> const NonStandardIntegerCommon<$ty, BITS, $signed> for int<$ty, BITS> {
+    impl<const BITS: u32> const NonStandardIntegerCommon<$ty, BITS> for int<$ty, BITS> {
         // checked implementations are not based on overflowing implementations because they can be implemented independently a little more performant.
         // todo: check performance...
         fn_checked!(
@@ -256,7 +264,7 @@ pub macro impl_common($ty:ty, $signed:literal) {
 
     impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>
     where
-        Self: NonStandardInteger<$ty, BITS, $signed>,
+        Self: NonStandardInteger<$ty, BITS>,
     {
         type Error = OutOfRangeIntError;
         // todo: test for negatives
@@ -297,7 +305,7 @@ pub macro impl_nonstandard_int {
             }
         }
 
-        impl<const BITS: u32> const NonStandardInteger<$ty, BITS, false> for int<$ty, BITS> {
+        impl<const BITS: u32> const NonStandardInteger<$ty, BITS> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS) - 1;
             const MIN: $ty = 0;
         }
@@ -319,7 +327,7 @@ pub macro impl_nonstandard_int {
             }
         }
 
-        impl<const BITS: u32> const NonStandardInteger<$ty, BITS, true> for int<$ty, BITS> {
+        impl<const BITS: u32> const NonStandardInteger<$ty, BITS> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
         }

@@ -3,7 +3,7 @@ use crate::convert::UncheckedFrom;
 // todo: const trait implementations
 // todo: maybe default implementations should not require `Self` traits
 /// Provides a base implementation for what a `NonStandardInteger` needs.
-pub trait NonStandardInteger<T, const BITS: u32, const SIGNED: bool>
+pub trait NonStandardInteger<T, const BITS: u32>
 where
     T: PartialOrd + Copy,
     Self: UncheckedFrom<T>,
@@ -11,9 +11,6 @@ where
     // TODO: find a better name for this.
     /// The underlying representation of the integer.
     type Repr = T;
-
-    /// Represents if this integer type is considered to be signed or not.
-    const SIGNED: bool = SIGNED;
 
     /// The size of this integer type in bits.
     const BITS: u32 = BITS;
@@ -37,8 +34,9 @@ where
 }
 
 /// Provides integer methods.
-pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const SIGNED: bool>:
-    NonStandardInteger<T, BITS, SIGNED>
+pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32>
+where
+    Self: NonStandardInteger<T, BITS>,
 {
     /// Checked integer addition. Computes `self + rhs`, returning `None`
     /// if overflow occurred.
@@ -172,8 +170,9 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32, const 
 }
 
 /// Provides integer methods that only make sense with signed integers.
-pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>:
-    NonStandardInteger<T, BITS, true>
+pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>
+where
+    Self: NonStandardInteger<T, BITS>,
 {
     /// Saturating absolute value. Computes `self.abs()`, returning `MAX`
     /// if `self == MIN` instead of overflowing.
