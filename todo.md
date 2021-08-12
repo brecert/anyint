@@ -10,6 +10,7 @@
   - [x] no_std support
     - Need to look into if this can be improved
     - should have better testing
+  - [~] num traits
 - [ ] bigints or similar
 - [ ] better docs and doctests
 - [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
