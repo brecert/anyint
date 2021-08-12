@@ -2,6 +2,7 @@
 #![allow(incomplete_features)]
 #![deny(missing_docs, unused_features)]
 #![feature(
+    test,
     decl_macro,
     const_trait_impl,
     const_refs_to_cell,
@@ -28,6 +29,9 @@ pub mod non_standard_integer;
 pub mod error;
 
 mod ops;
+
+#[cfg(test)]
+mod bench;
 
 /// The purpose of this module is to alleviate imports of many common `int` traits.
 ///

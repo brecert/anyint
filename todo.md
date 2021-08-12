@@ -14,7 +14,9 @@
 - [ ] better docs and doctests
 - [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
 - [~] very heavy cleanup
-  - [ ] test normalization and cleanup
+  - [~] test normalization and cleanup
   - [~] split up lib.rs
-- [ ] add benchmarks
+- [~] add benchmarks
+  - [ ] bench all of the operators for comparative performance
+  - [ ] fit performance within a set percentage of normal integers
 - [ ] code coverage
