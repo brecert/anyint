@@ -102,7 +102,7 @@ pub macro fn_wrapping($($fn_name:ident => $wrap_name:ident,)*) {
 }
 
 #[doc(hidden)]
-pub macro impl_common($ty:ty, $signed:literal) {
+pub macro impl_common($ty:ty, $signed:literal, { $($tt:tt)* }) {
     impl<const BITS: u32> const LossyFrom<$ty> for int<$ty, BITS> {
         /// Convert a `T` into the target. Only the `BITS` amount are kept.
         fn from_lossy(val: $ty) -> Self {
@@ -185,6 +185,16 @@ pub macro impl_common($ty:ty, $signed:literal) {
             wrapping_div => overflowing_div,
         );
 
+        // TODO: optimize generated asm, remove naive implementation
+        /// ```
+        /// use anyint::prelude::*;
+        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+        /// assert_eq!(N6::new(20).wrapping_rem(N6::new(10)).0, 0);
+        /// ```
+        fn wrapping_rem(self, rhs: Self) -> Self {
+            Self(self.0.wrapping_rem(rhs.0))
+        }
+
         /// ```
         /// use anyint::prelude::*;
         #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
@@ -260,6 +270,8 @@ pub macro impl_common($ty:ty, $signed:literal) {
         fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
             (self.wrapping_shr(rhs), (rhs > (Self::BITS - 1)))
         }
+
+        $($tt)*
     }
 
     impl<const BITS: u32> const TryFrom<$ty> for int<$ty, BITS>
@@ -310,7 +322,15 @@ pub macro impl_nonstandard_int {
             const MIN: $ty = 0;
         }
 
-        impl_common!($ty, false);
+        impl_common!($ty, false, {
+            fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+                (Self(self.0 % rhs.0) , false)
+            }
+
+            fn wrapping_rem(self, rhs: Self) -> Self {
+                self.overflowing_rem(rhs).0
+            }
+        });
     },
     (signed: $ty: ty) => {
         impl<const BITS: u32> const Wrap<Self> for int<$ty, BITS> {
@@ -350,7 +370,19 @@ pub macro impl_nonstandard_int {
             }
         }
 
-        impl_common!($ty, true);
+        impl_common!($ty, true, {
+            fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+                if self.0 == Self::MIN && rhs.0 == -1 {
+                    (Self(0), true)
+                } else {
+                    (Self(self.0 % rhs.0), false)
+                }
+            }
+
+            fn wrapping_rem(self, rhs: Self) -> Self {
+                self.overflowing_rem(rhs).0
+            }
+        });
     }
 }
 
@@ -883,10 +915,34 @@ mod test {
                 );
             }
 
+
+            #[test]
+            fn overflowing_rem() {
+                assert_eq!(
+                    i6::new(6).overflowing_rem(2.into_lossy()),
+                    (i6::new(0), false)
+                );
+                assert_eq!(
+                    i6::new(i6::MIN).overflowing_rem(i6::new(-1)),
+                    (i6::new(0), true)
+                );
+            }
+
             #[test]
             #[should_panic]
             fn overflowing_div_with_zero() {
                 i6::new(3).overflowing_div(0.into_lossy());
+            }
+        }
+
+        mod wrapping {
+            use super::*;
+
+            #[test]
+            fn wrapping_rem() {
+                assert_eq!(i6::new(20).wrapping_rem(i6::new(10)).0, 0);
+                assert_eq!(i6::new(i6::MIN).wrapping_rem(i6::new(-1)).0, 0);
+                assert_eq!(i6::new(i6::MIN).wrapping_rem(i6::new(-2)).0, 0);
             }
         }
 

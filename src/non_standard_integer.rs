@@ -104,7 +104,17 @@ where
     /// This function will panic if `rhs` is 0.
     fn wrapping_div(self, rhs: Self) -> Self;
 
-    // fn wrapping_rem(self, rhs: Self) -> Self;
+    /// Wrapping (modular) remainder. Computes `self % rhs`, wrapping around at the
+    /// boundary of the type.
+    ///
+    /// Such wrap-around never actually occurs mathematically;
+    /// implementation artifacts make `x % y` invalid for `MIN / -1` on a signed type (where `MIN` is the negative minimal value).
+    /// In such a case, this function returns `0`.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `rhs` is 0.
+    fn wrapping_rem(self, rhs: Self) -> Self;
 
     /// Panic-free bitwise shift-left; yields `self << mask(rhs)`,
     /// where `mask` removes any high-order bits of `rhs` that
@@ -146,7 +156,15 @@ where
     /// This function will panic if `rhs` is 0.
     fn overflowing_div(self, rhs: Self) -> (Self, bool);
 
-    // fn overflowing_rem(self, rhs: Self) -> Self;
+    /// Calculates the remainder when `self` is divided by `rhs`.
+    ///
+    /// Returns a tuple of the remainder after dividing along with a boolean indicating whether an
+    /// arithmetic overflow would occur. If an overflow would occur then 0 is returned.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `rhs` is 0.
+    fn overflowing_rem(self, rhs: Self) -> (Self, bool);
 
     /// Shifts self left by `rhs` bits.
     ///
