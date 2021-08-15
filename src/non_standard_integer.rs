@@ -251,6 +251,4 @@ where
     /// minimal value for the type; this is a positive value that is too large to represent in the type. In
     /// such a case, this function returns `MIN` itself.
     fn wrapping_abs(self) -> Self;
-
-    // todo: (overflowing | wrapping | checked)_abs
 }

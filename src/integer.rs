@@ -892,7 +892,7 @@ mod test {
         #[cfg(not(debug_assertions))]
         fn abs() {
             let a = i6::min_value().abs();
-            assert_eq!(a, u6::min_value());
+            assert_eq!(a, i6::min_value());
         }
 
         #[test]
