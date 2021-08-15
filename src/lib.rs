@@ -4,6 +4,7 @@
 #![feature(
     test,
     decl_macro,
+    const_panic,
     const_trait_impl,
     const_refs_to_cell,
     const_fn_trait_bound,

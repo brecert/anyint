@@ -353,6 +353,24 @@ pub macro impl_nonstandard_int {
         }
 
         impl<const BITS: u32> const NonStandardIntegerSigned<$ty, BITS> for int<$ty, BITS> {
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).is_negative(), false);
+            /// assert_eq!(N6::new(-5).is_negative(), true);
+            /// assert_eq!(N6::new(N6::MIN).is_negative(), true);
+            /// assert_eq!(N6::new(N6::MAX).is_negative(), false);
+            /// ```
+            fn is_negative(self) -> bool {
+                self.0.is_negative()
+            }
+
+            fn abs(self) -> Self {
+                let (val, overflowed) = self.overflowing_abs();
+                debug_assert!(!overflowed, "attempt to abs with overflow");
+                val
+            }
+
             fn saturating_abs(self) -> Self {
                 if *self.as_ref() == Self::MIN {
                     Self(Self::MAX)
@@ -387,6 +405,17 @@ pub macro impl_nonstandard_int {
             /// ```
             /// use anyint::prelude::*;
             #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).overflowing_abs(), (N6::new(5), false));
+            /// assert_eq!(N6::new(-5).overflowing_abs(), (N6::new(5), false));
+            /// assert_eq!(N6::new(N6::MIN).overflowing_abs(), (N6::min_value(), true));
+            /// ```
+            fn overflowing_abs(self) -> (Self, bool) {
+                (self.wrapping_abs(), self.0 == Self::MIN)
+            }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
             /// assert_eq!(N6::new(5).checked_neg(), Some(N6::new(-5)));
             /// assert_eq!(N6::new(-5).checked_neg(), Some(N6::new(5)));
             /// assert_eq!(N6::new(N6::MIN).checked_neg(), None);
@@ -399,12 +428,42 @@ pub macro impl_nonstandard_int {
             /// ```
             /// use anyint::prelude::*;
             #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).checked_abs(), Some(N6::new(5)));
+            /// assert_eq!(N6::new(-5).checked_abs(), Some(N6::new(5)));
+            /// assert_eq!(N6::new(N6::MIN).checked_abs(), None);
+            /// ```
+            fn checked_abs(self) -> Option<Self> {
+                if self.is_negative() {
+                    self.checked_neg()
+                } else {
+                    Some(self)
+                }
+            }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
             /// assert_eq!(N6::new(5).wrapping_neg(), N6::new(-5));
             /// assert_eq!(N6::new(-5).wrapping_neg(),N6::new(5));
             /// assert_eq!(N6::new(N6::MIN).wrapping_neg(), N6::new(N6::MIN));
             /// ```
             fn wrapping_neg(self) -> Self {
                 self.overflowing_neg().0
+            }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).wrapping_abs(), N6::new(5));
+            /// assert_eq!(N6::new(-5).wrapping_abs(),N6::new(5));
+            /// assert_eq!(N6::new(N6::MIN).wrapping_abs(), N6::new(N6::MIN));
+            /// ```
+            fn wrapping_abs(self) -> Self {
+                if self.is_negative() {
+                    self.wrapping_neg()
+                } else {
+                    self
+                }
             }
         }
 
@@ -821,11 +880,26 @@ mod test {
         fn try_from_inner_type_to_arbitrary() {
             let value: Result<i6, OutOfRangeIntError> = 15.try_into();
             assert_eq!(value, Ok(int::<i8, 6>(15)));
+
             let value: Result<i6, OutOfRangeIntError> = 32.try_into();
             assert_eq!(value, Err(OutOfRangeIntError::PosOverflow));
 
             let value: Result<i6, OutOfRangeIntError> = (-33).try_into();
             assert_eq!(value, Err(OutOfRangeIntError::NegOverflow))
+        }
+
+        #[test]
+        #[cfg(not(debug_assertions))]
+        fn abs() {
+            let a = i6::min_value().abs();
+            assert_eq!(a, u6::min_value());
+        }
+
+        #[test]
+        #[should_panic]
+        #[cfg(debug_assertions)]
+        fn abs() {
+            let _ = i6::min_value().abs();
         }
 
         mod saturating {

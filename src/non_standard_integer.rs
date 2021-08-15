@@ -192,13 +192,28 @@ pub trait NonStandardIntegerSigned<T: PartialOrd + Copy, const BITS: u32>
 where
     Self: NonStandardInteger<T, BITS>,
 {
-    /// Saturating absolute value. Computes `self.abs()`, returning `MAX`
-    /// if `self == MIN` instead of overflowing.
-    fn saturating_abs(self) -> Self;
+    /// Computes the absolute value of `self`.
+    ///
+    /// # Overflow behavior
+    ///
+    /// The absolute value of `MIN` cannot be represented as a value in signed integers.
+    ///
+    /// Attempting to calculate it will cause an overflow. This means
+    /// that code in debug mode will trigger a panic on this case and
+    /// optimized code will return `MIN` without a panic.
+    fn abs(self) -> Self;
+
+    /// Returns `true` if `self` is negative and `false` if the number is zero or
+    /// positive.
+    fn is_negative(self) -> bool;
 
     /// Saturating integer negation. Computes `-self`, returning `MAX`
     /// if `self == MIN` instead of overflowing.
     fn saturating_neg(self) -> Self;
+
+    /// Saturating absolute value. Computes `self.abs()`, returning `MAX`
+    /// if `self == MIN` instead of overflowing.
+    fn saturating_abs(self) -> Self;
 
     /// Negates self, overflowing if this is equal to the minimum value.
     ///
@@ -207,8 +222,19 @@ where
     /// minimum value will be returned again and `true` will be returned for an overflow happening.
     fn overflowing_neg(self) -> (Self, bool);
 
+    /// Computes the absolute value of `self`.
+    ///
+    /// Returns a tuple of the absolute version of self along with a boolean indicating whether an overflow
+    /// happened. If self is the minimum value `MIN` then the value will be returned
+    /// again and true will be returned for an overflow happening.
+    fn overflowing_abs(self) -> (Self, bool);
+
     /// Checked negation. Computes `-self`, returning `None` if `self == MIN`.
     fn checked_neg(self) -> Option<Self>;
+
+    /// Checked absolute value. Computes `self.abs()`, returning `None` if
+    /// `self == MIN`
+    fn checked_abs(self) -> Option<Self>;
 
     /// Wrapping (modular) negation. Computes `-self`, wrapping around at the boundary
     /// of the type.
@@ -217,6 +243,14 @@ where
     /// is the negative minimal value for the type); this is a positive value that is too large to represent
     /// in the type. In such a case, this function returns `MIN` itself.    
     fn wrapping_neg(self) -> Self;
+
+    /// Wrapping (modular) absolute value. Computes `self.abs()`, wrapping around at
+    /// the boundary of the type.
+    ///
+    /// The only case where such wrapping can occur is when one takes the absolute value of the negative
+    /// minimal value for the type; this is a positive value that is too large to represent in the type. In
+    /// such a case, this function returns `MIN` itself.
+    fn wrapping_abs(self) -> Self;
 
     // todo: (overflowing | wrapping | checked)_abs
 }
