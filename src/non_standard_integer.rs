@@ -22,15 +22,10 @@ where
     const MAX: T;
 
     /// Returns the smallest value that can be represented by this integer type.
-    fn min_value() -> Self {
-        // SAFETY: The user ensures that `MIN` is valid
-        unsafe { Self::from_unchecked(Self::MIN) }
-    }
+    fn min_value() -> Self;
+
     /// Returns the largest value that can be represented by this integer type.
-    fn max_value() -> Self {
-        // SAFETY: The user ensures that `MAX` is valid
-        unsafe { Self::from_unchecked(Self::MAX) }
-    }
+    fn max_value() -> Self;
 }
 
 /// Provides integer methods.

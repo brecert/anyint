@@ -12,11 +12,8 @@ pub const fn clamped<T: PartialOrd + Copy>(input: T, min: T, max: T) -> (T, bool
 
 /// Provides wrapping or overflowing functionality to a value.
 pub trait Wrap<T>: Sized {
-    #[inline]
     /// Wraps the value, wrapping around if out of bounds.
-    fn wrap(self) -> T {
-        self.wrapped().0
-    }
+    fn wrap(self) -> T;
 
     /// Returns a tuple of the wrapped result, along with a boolean indicating whether the result was wrapped.
     fn wrapped(self) -> (T, bool);
@@ -24,11 +21,8 @@ pub trait Wrap<T>: Sized {
 
 /// Provides clamping functionality to a value.
 pub trait Clamp<T>: Sized {
-    #[inline]
     /// Clamps the value, clamping at the bounds if the result is out of bounds.
-    fn clamp(self) -> T {
-        self.clamped().0
-    }
+    fn clamp(self) -> T;
 
     /// Returns a tuple of the clamped result, along with a boolean indicating whether the result was clamped.
     fn clamped(self) -> (T, bool);

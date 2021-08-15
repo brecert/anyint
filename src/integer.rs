@@ -320,6 +320,16 @@ pub macro impl_nonstandard_int {
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS) - 1;
             const MIN: $ty = 0;
+
+            fn min_value() -> Self {
+                // SAFETY: The user ensures that `MIN` is valid
+                unsafe { Self::from_unchecked(Self::MIN) }
+            }
+
+            fn max_value() -> Self {
+                // SAFETY: The user ensures that `MAX` is valid
+                unsafe { Self::from_unchecked(Self::MAX) }
+            }
         }
 
         impl_common!($ty, false, {
@@ -350,6 +360,16 @@ pub macro impl_nonstandard_int {
         impl<const BITS: u32> const NonStandardInteger<$ty, BITS> for int<$ty, BITS> {
             const MAX: $ty = (1 << Self::BITS.saturating_sub(1)) - 1;
             const MIN: $ty = !Self::MAX;
+
+            fn min_value() -> Self {
+                // SAFETY: The user ensures that `MIN` is valid
+                unsafe { Self::from_unchecked(Self::MIN) }
+            }
+
+            fn max_value() -> Self {
+                // SAFETY: The user ensures that `MAX` is valid
+                unsafe { Self::from_unchecked(Self::MAX) }
+            }
         }
 
         impl<const BITS: u32> const NonStandardIntegerSigned<$ty, BITS> for int<$ty, BITS> {
