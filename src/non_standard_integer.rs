@@ -200,5 +200,23 @@ where
     /// if `self == MIN` instead of overflowing.
     fn saturating_neg(self) -> Self;
 
-    // todo: (overflowing | wrapping | checked)_(neg | abs)
+    /// Negates self, overflowing if this is equal to the minimum value.
+    ///
+    /// Returns a tuple of the negated version of self along with a boolean indicating whether an overflow
+    /// happened. If `self` is the minimum value `MIN`, then the
+    /// minimum value will be returned again and `true` will be returned for an overflow happening.
+    fn overflowing_neg(self) -> (Self, bool);
+
+    /// Checked negation. Computes `-self`, returning `None` if `self == MIN`.
+    fn checked_neg(self) -> Option<Self>;
+
+    /// Wrapping (modular) negation. Computes `-self`, wrapping around at the boundary
+    /// of the type.
+    ///
+    /// The only case where such wrapping can occur is when one negates `MIN` on a signed type (where `MIN`
+    /// is the negative minimal value for the type); this is a positive value that is too large to represent
+    /// in the type. In such a case, this function returns `MIN` itself.    
+    fn wrapping_neg(self) -> Self;
+
+    // todo: (overflowing | wrapping | checked)_abs
 }

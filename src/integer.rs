@@ -368,6 +368,44 @@ pub macro impl_nonstandard_int {
                     Self(self.as_ref().saturating_neg())
                 }
             }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).overflowing_neg(), (N6::new(-5), false));
+            /// assert_eq!(N6::new(-5).overflowing_neg(), (N6::new(5), false));
+            /// assert_eq!(N6::new(N6::MIN).overflowing_neg(), (N6::min_value(), true));
+            /// ```
+            fn overflowing_neg(self) -> (Self, bool) {
+                if self.0 == Self::MIN {
+                    (Self(Self::MIN), true)
+                } else {
+                    (Self(-self.0), false)
+                }
+            }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).checked_neg(), Some(N6::new(-5)));
+            /// assert_eq!(N6::new(-5).checked_neg(), Some(N6::new(5)));
+            /// assert_eq!(N6::new(N6::MIN).checked_neg(), None);
+            /// ```
+            fn checked_neg(self) -> Option<Self> {
+                let (a, b) = self.overflowing_neg();
+                if b { None } else { Some(a) }
+            }
+
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::new(5).wrapping_neg(), N6::new(-5));
+            /// assert_eq!(N6::new(-5).wrapping_neg(),N6::new(5));
+            /// assert_eq!(N6::new(N6::MIN).wrapping_neg(), N6::new(N6::MIN));
+            /// ```
+            fn wrapping_neg(self) -> Self {
+                self.overflowing_neg().0
+            }
         }
 
         impl_common!($ty, true, {
@@ -914,7 +952,6 @@ mod test {
                     (i6::new(0), false)
                 );
             }
-
 
             #[test]
             fn overflowing_rem() {
