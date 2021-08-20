@@ -52,6 +52,14 @@ macro_rules! impl_common {
                 Self(Self::MAX)
             }
 
+            pub fn bits(self) -> u32 {
+                Self::BITS
+            }
+
+            pub fn repr(self) -> u32 {
+                <$ty>::BITS
+            }
+
             /// Returns the smallest value that can be represented by this integer type.
             #[inline]
             pub const fn min_value() -> Self {
@@ -143,7 +151,8 @@ mod test {
 
         #[test]
         fn smoketest() {
-            let x = n!(32i7);
+            let x = n!(-32i21);
+            dbg!(x, x.bits(), x.repr());
         }
     }
 
