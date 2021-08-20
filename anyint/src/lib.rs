@@ -151,7 +151,7 @@ mod test {
 
         #[test]
         fn smoketest() {
-            let x = n!(-32i21);
+            let x = n!(-0b11i21);
             dbg!(x, x.bits(), x.repr());
         }
     }

@@ -17,21 +17,24 @@ impl Parse for IntType {
         let neg = input
             .step(|cursor| {
                 if let Some((punct, rest)) = cursor.punct() {
-                    return Ok((punct.as_char() == '-', rest));
+                    if punct.as_char() == '-' {
+                        return Ok((true, rest));
+                    }
                 }
 
-                Err(cursor.error("message"))
+                Err(cursor.error("Integer literal expected"))
             })
-            .unwrap_or(false);
+            .unwrap_or_default();
 
         let int = input.parse::<LitInt>()?;
-        let suffix = int.suffix();
 
         let mut digits = int.base10_digits().to_string();
 
         if neg {
             digits.insert_str(0, "-")
         }
+
+        let suffix = int.suffix();
 
         let sign = match suffix.chars().next() {
             Some(sign @ ('i' | 'u')) => sign,
