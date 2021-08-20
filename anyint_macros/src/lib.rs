@@ -1,43 +1,10 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Literal, Span};
-use quote::{format_ident, quote, ToTokens};
+use proc_macro2::Literal;
+use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
-use syn::spanned::Spanned;
-use syn::{parse_macro_input, Error, LitInt, Result};
-
-mod token {
-    syn::custom_keyword!(i);
-    syn::custom_keyword!(u);
-}
-
-enum IntTypeToken {
-    Signed,
-    Unsigned,
-}
-
-impl IntTypeToken {
-    fn value(self) -> char {
-        match self {
-            Self::Signed => 'i',
-            Self::Unsigned => 'u',
-        }
-    }
-}
-
-impl Parse for IntTypeToken {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let lookahead = input.lookahead1();
-        if lookahead.peek(token::i) {
-            Ok(IntTypeToken::Signed)
-        } else if lookahead.peek(token::u) {
-            Ok(IntTypeToken::Unsigned)
-        } else {
-            Err(lookahead.error())
-        }
-    }
-}
+use syn::{parse_macro_input, LitInt, Result};
 
 struct IntType {
     digits: String,
