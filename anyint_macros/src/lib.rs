@@ -47,9 +47,6 @@ impl Parse for IntType {
             .parse::<u32>()
             .map_err(|err| input.error(err.to_string()))?;
 
-        // let sign = input.parse::<IntTypeToken>()?;
-        // let bits = input.parse::<LitInt>()?.base10_parse()?;
-
         Ok(IntType { digits, sign, bits })
     }
 }
@@ -73,7 +70,7 @@ pub fn n(input: TokenStream) -> TokenStream {
             .bits
             .saturating_add(1)
             .next_power_of_two()
-            .clamp(8, 64)
+            .clamp(8, 128)
     );
 
     quote!(
