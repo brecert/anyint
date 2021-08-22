@@ -225,23 +225,6 @@ pub macro impl_common($ty:ty, $signed:literal, { $($tt:tt)* }) {
             Self(*self.as_ref() + *rhs.as_ref()).wrapped()
         }
 
-        /// ```
-        /// use anyint::prelude::*;
-        #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
-        /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
-        /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
-        /// ```
-        fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-            let a = *self.as_ref();
-            let b = *rhs.as_ref();
-
-            if a >= b {
-                (Self(a - b), false)
-            } else {
-                (Self((1 << Self::BITS) - (b - a)).wrap(), true)
-            }
-        }
-
         fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
             Self(self.as_ref().wrapping_mul(*rhs.as_ref())).wrapped()
         }
@@ -333,6 +316,19 @@ pub macro impl_nonstandard_int {
         }
 
         impl_common!($ty, false, {
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
+            /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
+            /// ```
+            fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
+                (
+                    Self((self.0.wrapping_sub(rhs.0)).rem_euclid(Self::MAX + 1)),
+                    self.0 < rhs.0
+                )
+            }
+
             fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
                 (Self(self.0 % rhs.0) , false)
             }
@@ -488,6 +484,23 @@ pub macro impl_nonstandard_int {
         }
 
         impl_common!($ty, true, {
+            /// ```
+            /// use anyint::prelude::*;
+            #[doc = concat!("type N6 = int<", stringify!($ty), ", { ", stringify!(6), " }>;")]
+            /// assert_eq!(N6::min_value().overflowing_sub(N6::from_lossy(1)), (N6::max_value(), true));
+            /// assert_eq!(N6::max_value().overflowing_sub(N6::from_lossy(1)), (N6::from_lossy(N6::MAX - 1), false));
+            /// ```
+            fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
+                let a = *self.as_ref();
+                let b = *rhs.as_ref();
+
+                if a >= b {
+                    (Self(a - b), false)
+                } else {
+                    (Self((1 << Self::BITS) - (b - a)).wrap(), true)
+                }
+            }
+
             fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
                 if self.0 == Self::MIN && rhs.0 == -1 {
                     (Self(0), true)
@@ -1006,7 +1019,7 @@ mod test {
                     (i6::new(0), false)
                 );
                 assert_eq!(
-                    i6::new(i6::MAX - 2).overflowing_sub((i6::MAX - 1).into_lossy()),
+                    i6::new(i6::MAX - 2).overflowing_sub(i6::new(i6::MAX - 1)),
                     (i6::new(-1), true)
                 );
                 assert_eq!(
