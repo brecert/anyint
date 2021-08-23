@@ -5,7 +5,7 @@ use test::{black_box, Bencher};
 macro wrapping_bench($method:ident) {
     mod $method {
         use super::*;
-        
+
         #[bench]
         fn int_u21(b: &mut Bencher) {
             b.iter(|| {
@@ -14,12 +14,12 @@ macro wrapping_bench($method:ident) {
                 })
             });
         }
-        
+
         #[bench]
         fn std_u32(b: &mut Bencher) {
             b.iter(|| (1..5000).fold(0, |old: u32, new| black_box(old.$method(new))));
         }
-        
+
         #[bench]
         fn int_i38(b: &mut Bencher) {
             b.iter(|| {
@@ -28,7 +28,7 @@ macro wrapping_bench($method:ident) {
                 })
             });
         }
-        
+
         #[bench]
         fn std_i64(b: &mut Bencher) {
             b.iter(|| (1..5000).fold(0, |old: i64, new| black_box(old.$method(new))));
