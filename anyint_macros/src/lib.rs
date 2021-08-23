@@ -6,8 +6,8 @@ use std::str::FromStr;
 use thiserror::Error;
 
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Literal, Span};
-use quote::quote;
+use proc_macro2::{Ident, Literal};
+use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, LitInt, Result};
 
@@ -28,6 +28,29 @@ impl IntType {
     fn bits(&self) -> u32 {
         match self {
             Self::Signed(bits) | Self::Unsigned(bits) => *bits,
+        }
+    }
+
+    fn next_power_of_two_bits(&self) -> u32 {
+        self.bits()
+            .saturating_add(1)
+            .next_power_of_two()
+            .clamp(8, 128)
+    }
+
+    fn max(&self) -> u128 {
+        if self.is_signed() {
+            (1 << self.bits().saturating_sub(1)) - 1
+        } else {
+            (1 << self.bits()) - 1
+        }
+    }
+
+    fn min(&self) -> i128 {
+        if self.is_signed() {
+            !(self.max() as i128)
+        } else {
+            0
         }
     }
 }
@@ -78,6 +101,28 @@ impl FromStr for IntType {
         })
     }
 }
+
+impl Parse for IntType {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ty = input.parse::<Ident>()?;
+        IntType::from_str(&ty.to_string()).map_err(|err| input.error(err.to_string()))
+    }
+}
+
+impl ToTokens for IntType {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let ty = format_ident!(
+            "{}{}",
+            if self.is_signed() { 'i' } else { 'u' },
+            self.next_power_of_two_bits()
+        );
+
+        let bits = self.bits();
+
+        tokens.append_all(quote!(::anyint::integer::int::<#ty, #bits>))
+    }
+}
+
 struct ParsedInt {
     digits: String,
     ty: IntType,
@@ -121,40 +166,17 @@ impl Parse for ParsedInt {
     }
 }
 
+#[doc(hidden)]
 macro overflowing_int_error($val:expr, $bits:expr, $min:expr, $max:expr, $ty: expr) {{
     let message = format!(
         "int out of range for int width of `{1}`
 the value `{0}` does not fit into the type `int<{4}, {1}>` whose range is `{2}..={3}`",
         $val, $bits, $min, $max, $ty
     );
-    quote!(compile_error!(#message)).into()
+    quote!(compile_error!(#message))
 }}
 
 impl ParsedInt {
-    fn bit_size(&self) -> u32 {
-        self.ty
-            .bits()
-            .saturating_add(1)
-            .next_power_of_two()
-            .clamp(8, 128)
-    }
-
-    fn max(&self) -> u128 {
-        if self.ty.is_signed() {
-            (1 << self.ty.bits().saturating_sub(1)) - 1
-        } else {
-            (1 << self.ty.bits()) - 1
-        }
-    }
-
-    fn min(&self) -> i128 {
-        if self.ty.is_signed() {
-            !(self.max() as i128)
-        } else {
-            0
-        }
-    }
-
     fn value<T: FromStr>(&self) -> std::result::Result<T, T::Err> {
         self.digits.parse::<T>()
     }
@@ -165,36 +187,55 @@ impl ToString for ParsedInt {
         format!(
             "{}{}",
             if self.ty.is_signed() { 'i' } else { 'u' },
-            self.bit_size()
+            self.ty.next_power_of_two_bits()
         )
+    }
+}
+
+impl ToTokens for ParsedInt {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let val = if self.ty.is_signed() {
+            let val = self.value().unwrap();
+            if val > (self.ty.max() as i128) || val < self.ty.min() {
+                tokens.append_all(overflowing_int_error!(
+                    self.digits,
+                    self.ty.bits(),
+                    self.ty.min(),
+                    self.ty.max(),
+                    self.ty.to_string()
+                ));
+
+                return;
+            }
+
+            Literal::i128_unsuffixed(val)
+        } else {
+            let val = self.value().unwrap();
+            if val > self.ty.max() {
+                tokens.append_all(overflowing_int_error!(
+                    self.digits,
+                    self.ty.bits(),
+                    self.ty.min(),
+                    self.ty.max(),
+                    self.ty.to_string()
+                ));
+
+                return;
+            }
+
+            Literal::u128_unsuffixed(val)
+        };
+
+        let ty = &self.ty;
+
+        tokens.append_all(quote!(
+            <#ty>::new(#val)
+        ));
     }
 }
 
 #[proc_macro]
 pub fn n(input: TokenStream) -> TokenStream {
     let int = parse_macro_input!(input as ParsedInt);
-
-    let bits = Literal::u32_unsuffixed(int.ty.bits());
-    let ty = Ident::new(&int.to_string(), Span::call_site());
-
-    let val = if int.ty.is_signed() {
-        let val = int.value().unwrap();
-        if val > (int.max() as i128) || val < int.min() {
-            return overflowing_int_error!(int.digits, int.ty.bits(), int.min(), int.max(), ty);
-        }
-
-        Literal::i128_unsuffixed(val)
-    } else {
-        let val = int.value().unwrap();
-        if val > int.max() {
-            return overflowing_int_error!(int.digits, int.ty.bits(), int.min(), int.max(), ty);
-        }
-
-        Literal::u128_unsuffixed(val)
-    };
-
-    quote!(
-        <::anyint::integer::int::<#ty, #bits>>::new(#val)
-    )
-    .into()
+    int.to_token_stream().into()
 }
