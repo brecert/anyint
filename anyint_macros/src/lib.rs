@@ -239,3 +239,10 @@ pub fn int(input: TokenStream) -> TokenStream {
     let int = parse_macro_input!(input as ParsedInt);
     int.to_token_stream().into()
 }
+
+#[proc_macro]
+#[allow(non_snake_case)]
+pub fn Int(input: TokenStream) -> TokenStream {
+    let int = parse_macro_input!(input as IntType);
+    int.to_token_stream().into()
+}

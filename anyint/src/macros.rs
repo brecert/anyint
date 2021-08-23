@@ -23,13 +23,35 @@
 /// ```
 pub use anyint_macros::int;
 
+/// Macro for using [`anyint::int`] types.
+///
+/// # Syntax
+///
+/// Syntax is similar to the currently existing rust integer types, however there are differences.
+///
+/// Any value in the range `0..=127` can be used for the width of the [`crate::int`]
+///
+/// However, `size` is not a valid size for the width.
+///
+/// # Examples
+///
+/// ```rust
+/// use anyint::prelude::*;
+/// use anyint::macros::Int;
+///
+/// fn add(a: u8, b: u8) -> Int![u12] {
+///   int::new(a.into()) + int::new(b.into())
+/// }
+/// ```
+pub use anyint_macros::Int;
+
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::prelude::*;
 
     #[test]
-    fn n_macro_uint() {
+    fn int_macro_uint() {
         assert_eq!(int!(0u6), int::<u8, 6>::new(0));
         assert_eq!(int!(63u6), int::<u8, 6>::new(63));
 
@@ -37,11 +59,18 @@ mod test {
     }
 
     #[test]
-    fn n_macro_sint() {
+    fn int_macro_sint() {
         assert_eq!(int!(31i6), int::<i8, 6>::new(31));
         assert_eq!(int!(-32i6), int::<i8, 6>::new(-32));
 
         assert_eq!(int!(0i127), int::<i128, 127>::new(0));
+    }
+
+    #[test]
+    fn type_macro() {
+        assert_eq!(<Int![u6]>::MAX, int::<u8, 6>::MAX);
+        assert_eq!(<Int![i6]>::MIN, -32);
+        assert_eq!(<Int![i31]>::new(16), int::<i32, 31>::new(16));
     }
 }
 
