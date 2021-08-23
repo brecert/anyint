@@ -44,7 +44,7 @@ where
     }
 
     /// Gets the inner value
-    pub fn val(self) -> T {
+    pub fn value(self) -> T {
         self.0
     }
 }

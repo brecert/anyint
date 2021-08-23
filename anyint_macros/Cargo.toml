@@ -1,0 +1,18 @@
+[package]
+name = "anyint_macros"
+version = "0.1.0"
+authors = ["brecert <me@bree.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "anyint_macros"
+proc-macro = true
+
+[dependencies]
+syn = "1.0.60"
+quote = "1.0.9"
+proc-macro2 = "1.0.27"
+proc-macro-crate = "1.0.0"
+thiserror = "1.0.25"

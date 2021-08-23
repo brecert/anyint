@@ -14,6 +14,8 @@
 
 //! Anyint provides traits and structs for working with integers of any bit size
 
+extern crate self as anyint;
+
 /// Restrict and contrain values.
 pub mod clamp;
 
@@ -28,6 +30,8 @@ pub mod non_standard_integer;
 
 /// Error types relating to integers.
 pub mod error;
+
+pub mod macros;
 
 /// Implementations of traits from the `num-traits` crate
 #[cfg(feature = "num")]
@@ -56,3 +60,5 @@ pub mod prelude {
     pub use super::integer::int;
     pub use super::non_standard_integer::*;
 }
+
+pub use integer::int;
