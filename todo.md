@@ -35,3 +35,4 @@
   - [ ] bench all of the operators for comparative performance
   - [ ] fit performance within a set percentage of normal integers
 - [ ] code coverage
+- [ ] export proc macro structs and implementations for those who may want to use it

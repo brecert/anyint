@@ -72,12 +72,16 @@ mod test {
         fn n_macro_uint() {
             assert_eq!(n!(0u6), int::<u8, 6>::new(0));
             assert_eq!(n!(63u6), int::<u8, 6>::new(63));
+
+            assert_eq!(n!(0u127), int::<u128, 127>::new(0));
         }
 
         #[test]
         fn n_macro_sint() {
             assert_eq!(n!(31i6), int::<i8, 6>::new(31));
             assert_eq!(n!(-32i6), int::<i8, 6>::new(-32));
+
+            assert_eq!(n!(0i127), int::<i128, 127>::new(0));
         }
     }
 }
@@ -109,4 +113,10 @@ mod doctest {
     /// let x = n!(-33i6);
     /// ```
     pub struct MacroOnlyTakesValidNegativeSInt;
+
+    /// ```compile_fail
+    /// use anyint_macros::n;
+    /// let x = n!(0u128);
+    /// ```
+    pub struct MacroOnlyTakesValidWidth;
 }
