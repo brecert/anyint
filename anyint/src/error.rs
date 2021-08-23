@@ -1,7 +1,7 @@
 use core::num::IntErrorKind;
 use displaydoc::Display;
 
-/// The error type returned when a checked `int` conversion fails.
+/// The error type returned when a checked [`int`](anyint::int) conversion fails.
 #[cfg_attr(
     std,
     error("out of range type conversion attempted"),

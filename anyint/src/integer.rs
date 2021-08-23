@@ -14,7 +14,7 @@ pub trait SignedInt<const SIGNED: bool> {
     const SIGNED: bool = SIGNED;
 }
 
-/// An integer representation that can hold `BITS` amount of information for the given type `T`.
+/// An integer representation that can hold [`Self::BITS`] amount of information for the given type `T`.
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -38,7 +38,7 @@ impl<T, const BITS: u32> int<T, BITS>
 where
     Self: LossyFrom<T>,
 {
-    /// Convenience wrapper around `from_lossy`.
+    /// Convenience wrapper around [`LossyFrom::from_lossy`].
     pub fn new(n: T) -> Self {
         Self::from_lossy(n)
     }
@@ -124,7 +124,7 @@ pub macro impl_common($ty:ty, $signed:literal, { $($tt:tt)* }) {
         }
 
         // todo: find better name
-        /// Limits the inner value to be between `MIN` and `MAX`
+        /// Limits the inner value to be between [`Self::MIN`] and [`Self::MAX`]
         fn clamped(self) -> (Self, bool) {
             let (val, clamped) = clamped(*self.as_ref(), Self::MIN, Self::MAX);
             // SAFETY: the value has already been clamped to be in the valid range of `int`

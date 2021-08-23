@@ -33,31 +33,31 @@ pub trait NonStandardIntegerCommon<T: PartialOrd + Copy, const BITS: u32>
 where
     Self: NonStandardInteger<T, BITS>,
 {
-    /// Checked integer addition. Computes `self + rhs`, returning `None`
+    /// Checked integer addition. Computes `self + rhs`, returning [`None`]
     /// if overflow occurred.
     fn checked_add(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer subtraction. Computes `self - rhs`, returning `None`
+    /// Checked integer subtraction. Computes `self - rhs`, returning [`None`]
     /// if overflow occurred.
     fn checked_sub(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer multiplication. Computes `self * rhs`, returning `None`
+    /// Checked integer multiplication. Computes `self * rhs`, returning [`None`]
     /// if overflow occurred.
     fn checked_mul(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer division. Computes `self / rhs`, returning `None`
+    /// Checked integer division. Computes `self / rhs`, returning [`None`]
     /// if `rhs == 0`.
     fn checked_div(self, rhs: Self) -> Option<Self>;
 
-    /// Checked integer remainder. Computes `self % rhs`, returning `None`
+    /// Checked integer remainder. Computes `self % rhs`, returning [`None`]
     /// if `rhs == 0`.
     fn checked_rem(self, rhs: Self) -> Option<Self>;
 
-    /// Checked shift left. Computes `self << rhs`, returning `None`
+    /// Checked shift left. Computes `self << rhs`, returning [`None`]
     /// if `rhs` is larger than or equal to the number of bits in `self`.
     fn checked_shl(self, rhs: u32) -> Option<Self>;
 
-    /// Checked shift right. Computes `self >> rhs`, returning `None`
+    /// Checked shift right. Computes `self >> rhs`, returning [`None`]
     /// if `rhs` is larger than or equal to the number of bits in `self`.
     fn checked_shr(self, rhs: u32) -> Option<Self>;
 
@@ -91,8 +91,8 @@ where
     /// boundary of the type.
     ///
     /// The only case where such wrapping can occur is when one divides `MIN / -1` on a signed type (where
-    /// `MIN` is the negative minimal value for the type); this is equivalent to `-MIN`, a positive value
-    /// that is too large to represent in the type. In such a case, this function returns `MIN` itself.
+    /// [`MIN`](NonStandardInteger::MIN) is the negative minimal value for the type); this is equivalent to `-MIN`, a positive value
+    /// that is too large to represent in the type. In such a case, this function returns [`MIN`](NonStandardInteger::MIN) itself.
     ///
     /// # Panics
     ///
@@ -103,7 +103,7 @@ where
     /// boundary of the type.
     ///
     /// Such wrap-around never actually occurs mathematically;
-    /// implementation artifacts make `x % y` invalid for `MIN / -1` on a signed type (where `MIN` is the negative minimal value).
+    /// implementation artifacts make `x % y` invalid for `MIN / -1` on a signed type (where [`MIN`](NonStandardInteger::MIN) is the negative minimal value).
     /// In such a case, this function returns `0`.
     ///
     /// # Panics
@@ -191,59 +191,59 @@ where
     ///
     /// # Overflow behavior
     ///
-    /// The absolute value of `MIN` cannot be represented as a value in signed integers.
+    /// The absolute value of [`MIN`](NonStandardInteger::MIN) cannot be represented as a value in signed integers.
     ///
     /// Attempting to calculate it will cause an overflow. This means
     /// that code in debug mode will trigger a panic on this case and
-    /// optimized code will return `MIN` without a panic.
+    /// optimized code will return [`MIN`](NonStandardInteger::MIN) without a panic.
     fn abs(self) -> Self;
 
     /// Returns `true` if `self` is negative and `false` if the number is zero or
     /// positive.
     fn is_negative(self) -> bool;
 
-    /// Saturating integer negation. Computes `-self`, returning `MAX`
+    /// Saturating integer negation. Computes `-self`, returning [`MAX`](NonStandardInteger::MAX)
     /// if `self == MIN` instead of overflowing.
     fn saturating_neg(self) -> Self;
 
-    /// Saturating absolute value. Computes `self.abs()`, returning `MAX`
+    /// Saturating absolute value. Computes [`self.abs()`](Self::abs), returning [`MAX`](NonStandardInteger::MAX)
     /// if `self == MIN` instead of overflowing.
     fn saturating_abs(self) -> Self;
 
     /// Negates self, overflowing if this is equal to the minimum value.
     ///
     /// Returns a tuple of the negated version of self along with a boolean indicating whether an overflow
-    /// happened. If `self` is the minimum value `MIN`, then the
-    /// minimum value will be returned again and `true` will be returned for an overflow happening.
+    /// happened. If `self` is the minimum value [`MIN`](NonStandardInteger::MIN), then the
+    /// minimum value will be returned again and [`true`] will be returned for an overflow happening.
     fn overflowing_neg(self) -> (Self, bool);
 
     /// Computes the absolute value of `self`.
     ///
     /// Returns a tuple of the absolute version of self along with a boolean indicating whether an overflow
-    /// happened. If self is the minimum value `MIN` then the value will be returned
-    /// again and true will be returned for an overflow happening.
+    /// happened. If self is the minimum value [`MIN`](NonStandardInteger::MIN) then the value will be returned
+    /// again and [`true`] will be returned for an overflow happening.
     fn overflowing_abs(self) -> (Self, bool);
 
-    /// Checked negation. Computes `-self`, returning `None` if `self == MIN`.
+    /// Checked negation. Computes `-self`, returning [`None`] if `self == MIN`.
     fn checked_neg(self) -> Option<Self>;
 
-    /// Checked absolute value. Computes `self.abs()`, returning `None` if
+    /// Checked absolute value. Computes [`self.abs()`](Self::abs), returning [`None`] if
     /// `self == MIN`
     fn checked_abs(self) -> Option<Self>;
 
     /// Wrapping (modular) negation. Computes `-self`, wrapping around at the boundary
     /// of the type.
     ///
-    /// The only case where such wrapping can occur is when one negates `MIN` on a signed type (where `MIN`
+    /// The only case where such wrapping can occur is when one negates[`MIN`](NonStandardInteger::MIN) on a signed type (where [`MIN`](NonStandardInteger::MIN)
     /// is the negative minimal value for the type); this is a positive value that is too large to represent
-    /// in the type. In such a case, this function returns `MIN` itself.    
+    /// in the type. In such a case, this function returns [`MIN`](NonStandardInteger::MIN) itself.    
     fn wrapping_neg(self) -> Self;
 
-    /// Wrapping (modular) absolute value. Computes `self.abs()`, wrapping around at
+    /// Wrapping (modular) absolute value. Computes [`self.abs()`](Self::abs), wrapping around at
     /// the boundary of the type.
     ///
     /// The only case where such wrapping can occur is when one takes the absolute value of the negative
     /// minimal value for the type; this is a positive value that is too large to represent in the type. In
-    /// such a case, this function returns `MIN` itself.
+    /// such a case, this function returns [`MIN`](NonStandardInteger::MIN) itself.
     fn wrapping_abs(self) -> Self;
 }

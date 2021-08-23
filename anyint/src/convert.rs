@@ -40,7 +40,7 @@ where
     }
 }
 
-/// Converts `Self` into `T`, without bound checking.
+/// Converts [`Self`] into `T`, without bound checking.
 pub unsafe trait UncheckedInto<T>: Sized {
     /// Performs the conversion without checking, possibly performing undefined behavior in the process.
     unsafe fn into_unchecked(self) -> T;

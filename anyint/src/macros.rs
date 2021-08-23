@@ -1,14 +1,14 @@
-//! Macros to make constructing `int` types and values easier.
+//! Macros to make constructing [`int`](anyint::int) types and values easier.
 
 // TODO: Explain hygeine
 
-/// Macro for constructing [`anyint::int`] instances.
+/// Macro for constructing [`int`](anyint::int) instances.
 ///
 /// # Syntax
 ///
 /// Syntax is similar to the currently existing rust integer literals, however there are differences.
 ///
-/// Any value in the range `0..=127` can be used for the width of the [`crate::int`]
+/// Any value in the range `0..=127` can be used for the width of the [`int`](anyint::int)
 ///
 /// However, `size` is not a valid size for the width.
 ///
@@ -23,13 +23,13 @@
 /// ```
 pub use anyint_macros::int;
 
-/// Macro for using [`anyint::int`] types.
+/// Macro for using [`int`](anyint::int) types.
 ///
 /// # Syntax
 ///
 /// Syntax is similar to the currently existing rust integer types, however there are differences.
 ///
-/// Any value in the range `0..=127` can be used for the width of the [`crate::int`]
+/// Any value in the range `0..=127` can be used for the width of the [`anyint::int`]
 ///
 /// However, `size` is not a valid size for the width.
 ///

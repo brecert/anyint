@@ -19,10 +19,10 @@ extern crate self as anyint;
 /// Restrict and contrain values.
 pub mod clamp;
 
-/// Conversion types meant for `int`.
+/// Conversion types meant for [`int`].
 pub mod convert;
 
-/// Struct implementation for `NonStandardInteger`
+/// Struct implementation for [`NonStandardInteger`](non_standard_integer::NonStandardInteger)
 pub mod integer;
 
 /// Traits for implementing a non standard integer.
@@ -33,7 +33,7 @@ pub mod error;
 
 pub mod macros;
 
-/// Implementations of traits from the `num-traits` crate
+/// Implementations of traits from the [`num-traits`] crate
 #[cfg(feature = "num")]
 mod num;
 
@@ -42,7 +42,7 @@ mod ops;
 #[cfg(test)]
 mod bench;
 
-/// The purpose of this module is to alleviate imports of many common `int` traits.
+/// The purpose of this module is to alleviate imports of many common [`int`] traits.
 ///
 /// ```
 /// use anyint::prelude::*;
