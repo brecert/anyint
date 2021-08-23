@@ -235,7 +235,7 @@ impl ToTokens for ParsedInt {
 }
 
 #[proc_macro]
-pub fn n(input: TokenStream) -> TokenStream {
+pub fn int(input: TokenStream) -> TokenStream {
     let int = parse_macro_input!(input as ParsedInt);
     int.to_token_stream().into()
 }

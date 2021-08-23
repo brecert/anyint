@@ -36,3 +36,5 @@
   - [ ] fit performance within a set percentage of normal integers
 - [ ] code coverage
 - [ ] export proc macro structs and implementations for those who may want to use it
+- [ ] decide when to use `bit size` and when to use `width` when referring to the ints BITS value
+  - [ ] update documentation to match

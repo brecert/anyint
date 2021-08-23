@@ -31,6 +31,8 @@ pub mod non_standard_integer;
 /// Error types relating to integers.
 pub mod error;
 
+pub mod macros;
+
 /// Implementations of traits from the `num-traits` crate
 #[cfg(feature = "num")]
 mod num;
@@ -59,64 +61,4 @@ pub mod prelude {
     pub use super::non_standard_integer::*;
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use anyint_macros::n;
-    use prelude::*;
-
-    mod macros {
-        use super::*;
-
-        #[test]
-        fn n_macro_uint() {
-            assert_eq!(n!(0u6), int::<u8, 6>::new(0));
-            assert_eq!(n!(63u6), int::<u8, 6>::new(63));
-
-            assert_eq!(n!(0u127), int::<u128, 127>::new(0));
-        }
-
-        #[test]
-        fn n_macro_sint() {
-            assert_eq!(n!(31i6), int::<i8, 6>::new(31));
-            assert_eq!(n!(-32i6), int::<i8, 6>::new(-32));
-
-            assert_eq!(n!(0i127), int::<i128, 127>::new(0));
-        }
-    }
-}
-
-#[cfg(doctest)]
-mod doctest {
-    // TODO: test compiler errors that are generated to make sure they are accurate
-
-    /// ```compile_fail
-    /// use anyint_macros::n;
-    /// let x = n!(64u6);
-    /// ```
-    pub struct MacroOnlyTakesValidPositiveUInt;
-
-    /// ```compile_fail
-    /// use anyint_macros::n;
-    /// let x = n!(-1u6);
-    /// ```
-    pub struct MacroOnlyTakesValidNegativeUInt;
-
-    /// ```compile_fail
-    /// use anyint_macros::n;
-    /// let x = n!(32i6);
-    /// ```
-    pub struct MacroOnlyTakesValidPositiveSInt;
-
-    /// ```compile_fail
-    /// use anyint_macros::n;
-    /// let x = n!(-33i6);
-    /// ```
-    pub struct MacroOnlyTakesValidNegativeSInt;
-
-    /// ```compile_fail
-    /// use anyint_macros::n;
-    /// let x = n!(0u128);
-    /// ```
-    pub struct MacroOnlyTakesValidWidth;
-}
+pub use integer::int;
