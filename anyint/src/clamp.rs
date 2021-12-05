@@ -1,15 +1,3 @@
-/// Clamps a value between a range's beginning and end
-#[inline]
-pub const fn clamped<T: PartialOrd + Copy>(input: T, min: T, max: T) -> (T, bool) {
-    if input < min {
-        (min, true)
-    } else if input > max {
-        (max, true)
-    } else {
-        (input, false)
-    }
-}
-
 /// Provides wrapping or overflowing functionality to a value.
 pub trait Wrap<T>: Sized {
     /// Wraps the value, wrapping around if out of bounds.

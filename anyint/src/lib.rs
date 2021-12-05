@@ -19,7 +19,7 @@ extern crate self as anyint;
 /// Restrict and contrain values.
 pub mod clamp;
 
-/// Conversion types meant for [`int`].
+/// Conversion types intented to be used with [`int`].
 pub mod convert;
 
 /// Struct implementation for [`NonStandardInteger`](non_standard_integer::NonStandardInteger)
@@ -48,10 +48,10 @@ mod bench;
 /// use anyint::prelude::*;
 ///
 /// let x: int<u8, 6> = int::new(20);
-/// assert_eq!(x.val(), 20);
+/// assert_eq!(x.value(), 20);
 ///
 /// let y: int<i8, 6> = int::from_wrapping(34);
-/// assert_eq!(y.val(), -30);
+/// assert_eq!(y.value(), -30);
 /// ```
 pub mod prelude {
     // todo: no std

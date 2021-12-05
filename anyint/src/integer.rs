@@ -1,4 +1,4 @@
-use crate::clamp::{clamped, Clamp, Wrap};
+use crate::clamp::{Clamp, Wrap};
 use crate::convert::{LossyFrom, UncheckedFrom, WrappingFrom};
 use crate::error::{OutOfRangeIntError, ParseIntError};
 use crate::non_standard_integer::{
@@ -126,7 +126,16 @@ pub macro impl_common($ty:ty, $signed:literal, { $($tt:tt)* }) {
         // todo: find better name
         /// Limits the inner value to be between [`Self::MIN`] and [`Self::MAX`]
         fn clamped(self) -> (Self, bool) {
-            let (val, clamped) = clamped(*self.as_ref(), Self::MIN, Self::MAX);
+            let val = *self.as_ref();
+
+            let (val, clamped) = if val < Self::MIN {
+                (Self::MIN, true)
+            } else if val > Self::MAX {
+                (Self::MAX, true)
+            } else {
+                (val, false)
+            };
+
             // SAFETY: the value has already been clamped to be in the valid range of `int`
             unsafe { (Self::from_unchecked(val), clamped) }
         }
