@@ -1,12 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(incomplete_features)]
 #![deny(missing_docs, unused_features)]
 #![feature(
     test,
     decl_macro,
     const_trait_impl,
-    const_refs_to_cell,
-    const_fn_trait_bound,
     associated_type_defaults,
     result_flattening
 )]
@@ -66,6 +63,6 @@ pub use integer::int;
 
 #[cfg(doctest)]
 mod test_readme {
-  #[doc = include_str!("../../README.md")]
-  extern {}
+    #[doc = include_str!("../../README.md")]
+    extern "C" {}
 }
