@@ -7,7 +7,7 @@ description = "provides traits and structs for working with integers of any bit 
 license = "MIT"
 repository = "https://github.com/brecert/anyint"
 homepage = "https://github.com/brecert/anyint"
-keywords = ["integer", "number", "arbitrary-sized-integers"]
+keywords = ["integer", "number"]
 categories = ["no-std", "rust-patterns"]
 
 [dependencies]
