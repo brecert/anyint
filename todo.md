@@ -15,13 +15,13 @@
   - [~] num traits
 - [ ] bigints or similar
 - [~] better docs and doctests
-- [ ] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
+- [~] every one of these is fufilled: https://rust-lang.github.io/api-guidelines/documentation.html
 - [~] very heavy cleanup
   - [~] test normalization and cleanup
   - [~] split up lib.rs
 - [~] add benchmarks
   - [ ] bench all of the operators for comparative performance
-  - [ ] fit performance within a set percentage of normal integers
+  - [~] fit performance within a set percentage of normal integers
 - [ ] code coverage
 - [ ] export proc macro structs and implementations for those who may want to use it
 - [ ] decide when to use `bit size` and when to use `width` when referring to the ints BITS value

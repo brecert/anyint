@@ -107,7 +107,7 @@ pub macro num_trait_impl($trait_name:ident, $method:ident, $ty:ty) {
 
 #[doc(hidden)]
 /// Forward shr and shl methods from `NonStandardIntegerCommon` for num-traits
-pub macro num_trait_shift_impl($trait_name:ident, $method:ident, $ty:ty) {
+pub macro num_trait_shift_impl($trait_name:path, $method:ident, $ty:ty) {
     impl<T, const BITS: u32> $trait_name for int<T, BITS>
     where
         T: PartialOrd + Copy,
@@ -124,15 +124,15 @@ num_trait_impl!(CheckedAdd, checked_add, Option<Self>);
 num_trait_impl!(CheckedSub, checked_sub, Option<Self>);
 num_trait_impl!(CheckedMul, checked_mul, Option<Self>);
 num_trait_impl!(CheckedDiv, checked_div, Option<Self>);
-// checked_impl!(CheckedRem, checked_rem);
+// checked_impl!(num_traits::CheckedRem, checked_rem);
 num_trait_shift_impl!(CheckedShl, checked_shl, Option<Self>);
 num_trait_shift_impl!(CheckedShr, checked_shr, Option<Self>);
 
 num_trait_impl!(WrappingAdd, wrapping_add, Self);
 num_trait_impl!(WrappingSub, wrapping_sub, Self);
 num_trait_impl!(WrappingMul, wrapping_mul, Self);
-// num_trait_shift_impl!(WrappingShl, wrapping_shl, Self);
-// num_trait_shift_impl!(WrappingShr, wrapping_shr, Self);
+// num_trait_shift_impl!(num_traits::WrappingShl, wrapping_shl, Self);
+// num_trait_shift_impl!(num_traits::WrappingShr, wrapping_shr, Self);
 
 num_trait_impl!(SaturatingAdd, saturating_add, Self);
 num_trait_impl!(SaturatingSub, saturating_sub, Self);
@@ -146,8 +146,13 @@ mod tests {
     type u6 = int<u8, 6>;
 
     #[test]
-    fn basic_test() {
+    fn as_primative() {
         let n = u6::new(5);
         assert_eq!(AsPrimitive::as_(n), 5)
+    }
+
+    fn checked_add() {
+        let n = u6::new(5);
+        assert_eq!(CheckedAdd::checked_add(&n, &n), Some(u6::new(10)))
     }
 }

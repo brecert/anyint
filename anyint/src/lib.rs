@@ -30,8 +30,8 @@ pub mod error;
 pub mod macros;
 
 /// Implementations of traits from the [`num-traits`] crate
-#[cfg(feature = "num")]
-mod num;
+#[cfg(feature = "num_traits")]
+mod num_traits;
 
 mod ops;
 

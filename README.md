@@ -1,10 +1,14 @@
 # anyint
 
-> anyint provides traits and structs for working with integers of any bit size
+anyint provides traits and structs for working with integers of any bit size
+
+## Documentation
 
 This readme is lacking.
 
-The library however, is not lacking in documentation.
+The library however, should not be lacking in documentation.
+
+## Example
 
 ```rust
 use anyint::prelude::*;

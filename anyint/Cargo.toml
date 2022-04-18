@@ -15,4 +15,4 @@ anyint_macros = { version = "0.1.0", path = "../anyint_macros" }
 [features]
 default = ["std"]
 std = ["thiserror"]
-num = ["num-traits"]
+num_traits = ["num-traits"]

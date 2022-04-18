@@ -1,4 +1,8 @@
 #![feature(decl_macro)]
+#![deny(unused_features)]
+
+//! Anyint proc-macro crate and implementations
+
 extern crate proc_macro;
 
 use std::num::ParseIntError;
