@@ -1,4 +1,6 @@
 use core::num::IntErrorKind;
+
+#[cfg(displaydoc)]
 use displaydoc::Display;
 
 /// The error type returned when a checked [`int`](anyint::int) conversion fails.
@@ -7,7 +9,8 @@ use displaydoc::Display;
     error("out of range type conversion attempted"),
     derive(thiserror::Error)
 )]
-#[derive(Display, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[cfg_attr(displaydoc, derive(Display))]
+#[derive(Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum OutOfRangeIntError {
     /// Integer is too large to store in target integer type.
     PosOverflow,
@@ -23,7 +26,8 @@ impl From<OutOfRangeIntError> for ParseIntError {
 
 /// Enum to store the various types of errors that can cause parsing an integer to fail.
 #[cfg_attr(std, derive(thiserror::Error))]
-#[derive(Display, Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[cfg_attr(displaydoc, derive(Display))]
+#[derive(Debug, Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum ParseIntError {
     /// cannot parse integer from empty string
     Empty,

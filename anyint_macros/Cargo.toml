@@ -2,7 +2,11 @@
 name = "anyint_macros"
 version = "0.1.0"
 authors = ["brecert <me@bree.dev>"]
-edition = "2018"
+edition = "2021"
+description = "provides traits and structs for working with integers of any bit size"
+license = "MIT"
+repository = "https://github.com/brecert/anyint"
+homepage = "https://github.com/brecert/anyint"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
