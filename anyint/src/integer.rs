@@ -18,7 +18,7 @@ pub trait SignedInt<const SIGNED: bool> {
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct int<T, const BITS: u32>(#[doc(hidden)] pub T);
+pub struct int<T, const BITS: u32>(pub T);
 
 impl<T: Display, const BITS: u32> Display for int<T, BITS> {
     #[inline]

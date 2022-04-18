@@ -1,27 +1,49 @@
-# anyint
+# anyint — any bit sized integers
 
-anyint provides traits and structs for working with integers of any bit size
+[![Latest Version](https://img.shields.io/crates/v/anyint.svg)](https://crates.io/crates/anyint)
+[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/anyint)
 
-## Documentation
+This library provides traits and structs for working with integers of any bit size.
 
-This readme is lacking.
+*Compiler support: tested with rustc 1.61.0 nightly, unsure about support on lower versions*
 
-The library however, should not be lacking in documentation.
+<br>
 
-## Example
+### Example
 
 ```rust
 use anyint::prelude::*;
 use anyint::macros::{Int, int};
 
+// int macro to make working with the types easier
 assert_eq!(int!(0u6), int::<u8, 6>::new(0));
 assert_eq!(int!(-32i6), int::<i8, 6>::new(-32));
 
+// many of the same methods that the standard library integers have
 let num = int!(63u6).wrapping_add(int!(3u6));
-assert_eq!(num.value(), 2);
+assert_eq!(num.0, 2);
 
+// Int type macro to make working with the types easier
 fn add(a: u16, b: u16) -> Int![u12] {
-  int::new(a).wrapping_add(int::new(b))
+  int::new(a) + int::new(b)
 }
-assert_eq!(add(4000, 96), int::new(0));
+assert_eq!(add(5, 10), int::new(15));
 ```
+
+<br>
+
+### Details / Notes
+
+The underlying representation of your integer will be what is provided for the `anyint::int` struct.
+
+This is to keep performance reasonable and the implementations simple.
+
+<br>
+
+### FAQ
+
+1. **Is this crate `no_std` compatable?**
+    * Yes! Just add `default-features = false` and extra features will be disabled.
+
+
+<!-- This readme is heavily inspired by yaahc's and dtolnay's crate READMEs, thank you! -->

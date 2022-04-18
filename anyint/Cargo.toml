@@ -10,8 +10,6 @@ homepage = "https://github.com/brecert/anyint"
 keywords = ["integer", "number", "arbitrary-sized-integers"]
 categories = ["no-std", "rust-patterns"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 displaydoc = { version = "0.2", optional = true, default-features = false }
 thiserror = { version = "1.0", optional = true }
