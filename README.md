@@ -7,8 +7,6 @@ This library provides traits and structs for working with integers of any bit si
 
 *Compiler support: tested with rustc 1.61.0 nightly, unsure about support on lower versions*
 
-<br>
-
 ### Example
 
 ```rust
@@ -30,15 +28,11 @@ fn add(a: u16, b: u16) -> Int![u12] {
 assert_eq!(add(5, 10), int::new(15));
 ```
 
-<br>
-
 ### Details / Notes
 
 The underlying representation of your integer will be what is provided for the `anyint::int` struct.
 
 This is to keep performance reasonable and the implementations simple.
-
-<br>
 
 ### FAQ
 
