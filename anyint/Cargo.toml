@@ -9,6 +9,7 @@ repository = "https://github.com/brecert/anyint"
 homepage = "https://github.com/brecert/anyint"
 keywords = ["integer", "number"]
 categories = ["no-std", "rust-patterns"]
+readme = "../README.md"
 
 [dependencies]
 displaydoc = { version = "0.2", optional = true, default-features = false }
