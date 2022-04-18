@@ -34,10 +34,12 @@ The underlying representation of your integer will be what is provided for the `
 
 This is to keep performance reasonable and the implementations simple.
 
+Most of the common methods that std integers have should also be implemented here, if there's any that's missing feel free to create an issue about it.
+
 ### FAQ
 
 1. **Is this crate `no_std` compatable?**
-    * Yes! Just add `default-features = false` and extra features will be disabled.
+    * Yes! Just add `default-features = false`.
 
 
 <!-- This readme is heavily inspired by yaahc's and dtolnay's crate READMEs, thank you! -->
