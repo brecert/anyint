@@ -2,7 +2,8 @@
       If `from_lossy` and similar is to remain const, other features may need to be implemented first like const fn in traits
 - [x] A macro for writing int, so that `let x = n!(16u7);` is possible
   - [~] better testing for said macro
-  - [ ] Add `usize` and `isize` support to the macro if possible
+  - [~] Add `usize` and `isize` support to the macro if possible
+    - Added in a stash, however I'm unsure of it's usefulness and would rather have `size` values be explicit for now until I can think of the right behavior
 - [~] More methods
 - [ ] A more generic implementation once rust has better type support for that
 - [~] FromStr and other implementations

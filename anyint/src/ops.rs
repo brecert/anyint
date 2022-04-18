@@ -4,7 +4,7 @@ use crate::non_standard_integer::NonStandardIntegerCommon;
 use core::ops::{Add, Div, Mul, Shl, Shr, Sub};
 
 #[doc(hidden)]
-macro impl_op($trait_name: ident, $trait_fn_name: ident ($rhs_ty: ty), $overflow_name: ident, $overflow_message: literal) {
+pub macro impl_op($trait_name: ident, $trait_fn_name: ident ($rhs_ty: ty), $overflow_name: ident, $overflow_message: literal) {
     impl<T: PartialOrd + Copy, const BITS: u32> $trait_name<$rhs_ty> for int<T, BITS>
     where
         Self: NonStandardIntegerCommon<T, BITS>,
